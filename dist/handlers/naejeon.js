@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleNaejeonCommand = handleNaejeonCommand;
+exports.handleHostChangeCommand = handleHostChangeCommand;
 exports.handleNaejeonButton = handleNaejeonButton;
 const discord_js_1 = require("discord.js");
 const session_store_1 = require("../session-store");
@@ -137,6 +138,56 @@ async function handleNaejeonCommand(interaction) {
         return;
     session.messageId = message.id;
     (0, session_store_1.saveSession)(session);
+}
+async function handleHostChangeCommand(interaction) {
+    if (!interaction.guild || !interaction.channel?.isTextBased()) {
+        await interaction.reply({
+            content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const session = (0, session_store_1.getActiveSessionByChannel)(interaction.channelId);
+    if (!session ||
+        session.state === "cancelled" ||
+        session.state === "ended") {
+        await interaction.reply({
+            content: "이 채널에 진행 중인 내전이 없습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const userId = interaction.user.id;
+    if (!canActAsHost(session, userId, interaction)) {
+        await interaction.reply({
+            content: `호스트 변경은 <@${session.hostId}> 또는 **서버 관리자**만 할 수 있습니다.`,
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const newHost = interaction.options.getUser("호스트", true);
+    if (newHost.bot) {
+        await interaction.reply({
+            content: "봇은 호스트가 될 수 없습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    if (newHost.id === session.hostId) {
+        await interaction.reply({
+            content: `<@${newHost.id}>님이 이미 호스트입니다.`,
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const oldHostId = session.hostId;
+    session.hostId = newHost.id;
+    (0, session_store_1.saveSession)(session);
+    await updateSessionMessage(session, interaction.guild);
+    await interaction.reply({
+        content: `호스트가 <@${oldHostId}> → <@${newHost.id}> 로 변경되었습니다.`,
+        flags: discord_js_1.MessageFlags.Ephemeral,
+    });
 }
 async function handleNaejeonButton(interaction) {
     const parts = interaction.customId.split(":");

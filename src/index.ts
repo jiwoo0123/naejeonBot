@@ -8,6 +8,7 @@ import {
   type InteractionReplyOptions,
 } from "discord.js";
 import {
+  handleHostChangeCommand,
   handleNaejeonButton,
   handleNaejeonCommand,
 } from "./handlers/naejeon";
@@ -37,6 +38,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) {
       if (interaction.commandName === "내전") {
         await handleNaejeonCommand(interaction);
+      } else if (interaction.commandName === "호스트변경") {
+        await handleHostChangeCommand(interaction);
       }
       return;
     }

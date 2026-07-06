@@ -6,6 +6,7 @@ import {
   MessageFlags,
   PermissionFlagsBits,
   TextChannel,
+  type Interaction,
   type InteractionReplyOptions,
 } from "discord.js";
 import {
@@ -115,7 +116,11 @@ function isActiveState(state: NaejeonSession["state"]): boolean {
   return !["complete", "cancelled", "ended"].includes(state);
 }
 
-function isServerAdmin(interaction: ButtonInteraction): boolean {
+function isServerAdmin(
+  interaction: Interaction
+): interaction is Interaction & {
+  memberPermissions: NonNullable<Interaction["memberPermissions"]>;
+} {
   if (!interaction.inGuild()) return false;
   const perms = interaction.memberPermissions;
   if (!perms) return false;
@@ -128,7 +133,7 @@ function isServerAdmin(interaction: ButtonInteraction): boolean {
 function canActAsHost(
   session: NaejeonSession,
   userId: string,
-  interaction: ButtonInteraction
+  interaction: Interaction
 ): boolean {
   return userId === session.hostId || isServerAdmin(interaction);
 }
@@ -136,7 +141,7 @@ function canActAsHost(
 function canActForCurrentCaptain(
   session: NaejeonSession,
   userId: string,
-  interaction: ButtonInteraction
+  interaction: Interaction
 ): boolean {
   const currentCaptain = session.pickOrder[session.currentPickerIndex];
   return (
@@ -231,6 +236,67 @@ export async function handleNaejeonCommand(
 
   session.messageId = message.id;
   saveSession(session);
+}
+
+export async function handleHostChangeCommand(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!interaction.guild || !interaction.channel?.isTextBased()) {
+    await interaction.reply({
+      content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const session = getActiveSessionByChannel(interaction.channelId);
+  if (
+    !session ||
+    session.state === "cancelled" ||
+    session.state === "ended"
+  ) {
+    await interaction.reply({
+      content: "이 채널에 진행 중인 내전이 없습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const userId = interaction.user.id;
+  if (!canActAsHost(session, userId, interaction)) {
+    await interaction.reply({
+      content: `호스트 변경은 <@${session.hostId}> 또는 **서버 관리자**만 할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const newHost = interaction.options.getUser("호스트", true);
+  if (newHost.bot) {
+    await interaction.reply({
+      content: "봇은 호스트가 될 수 없습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (newHost.id === session.hostId) {
+    await interaction.reply({
+      content: `<@${newHost.id}>님이 이미 호스트입니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const oldHostId = session.hostId;
+  session.hostId = newHost.id;
+  saveSession(session);
+  await updateSessionMessage(session, interaction.guild);
+
+  await interaction.reply({
+    content: `호스트가 <@${oldHostId}> → <@${newHost.id}> 로 변경되었습니다.`,
+    flags: MessageFlags.Ephemeral,
+  });
 }
 
 export async function handleNaejeonButton(

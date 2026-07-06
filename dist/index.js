@@ -24,6 +24,9 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
             if (interaction.commandName === "내전") {
                 await (0, naejeon_1.handleNaejeonCommand)(interaction);
             }
+            else if (interaction.commandName === "호스트변경") {
+                await (0, naejeon_1.handleHostChangeCommand)(interaction);
+            }
             return;
         }
         if (interaction.isButton()) {
