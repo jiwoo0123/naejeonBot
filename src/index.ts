@@ -4,6 +4,8 @@ import {
   Events,
   GatewayIntentBits,
   Interaction,
+  MessageFlags,
+  type InteractionReplyOptions,
 } from "discord.js";
 import {
   handleNaejeonButton,
@@ -46,7 +48,10 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     }
   } catch (error) {
     console.error("Interaction error:", error);
-    const msg = { content: "오류가 발생했습니다. 다시 시도해주세요.", ephemeral: true };
+    const msg: InteractionReplyOptions = {
+      content: "오류가 발생했습니다. 다시 시도해주세요.",
+      flags: MessageFlags.Ephemeral,
+    };
     if (interaction.isRepliable()) {
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp(msg).catch(() => {});

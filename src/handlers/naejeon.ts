@@ -3,8 +3,10 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   Guild,
+  MessageFlags,
   PermissionFlagsBits,
   TextChannel,
+  type InteractionReplyOptions,
 } from "discord.js";
 import {
   createSessionId,
@@ -16,6 +18,10 @@ import {
 import { buildMessagePayload } from "../ui";
 import { createSession, resetForRematch, rollPickOrder } from "../types";
 import type { NaejeonSession } from "../types";
+
+function ephemeral(content: string): InteractionReplyOptions {
+  return { content, flags: MessageFlags.Ephemeral };
+}
 
 async function updateSessionMessage(
   session: NaejeonSession,
@@ -40,9 +46,9 @@ async function refresh(
   session: NaejeonSession,
   guild: Guild | null
 ): Promise<void> {
+  await interaction.deferUpdate();
   saveSession(session);
   await updateSessionMessage(session, guild);
-  await interaction.deferUpdate();
 }
 
 async function terminateSession(
@@ -51,10 +57,10 @@ async function terminateSession(
   guild: Guild | null,
   state: "cancelled" | "ended"
 ): Promise<void> {
+  await interaction.deferUpdate();
   session.state = state;
   await updateSessionMessage(session, guild);
   deleteSession(session.id);
-  await interaction.deferUpdate();
 }
 
 async function continueAsNewMessage(
@@ -67,12 +73,11 @@ async function continueAsNewMessage(
     | TextChannel
     | undefined;
   if (!channel) {
-    await interaction.reply({
-      content: "채널을 찾을 수 없습니다.",
-      ephemeral: true,
-    });
+    await interaction.reply(ephemeral("채널을 찾을 수 없습니다."));
     return;
   }
+
+  await interaction.deferUpdate();
 
   const oldMessage = await channel.messages
     .fetch(session.messageId)
@@ -90,8 +95,6 @@ async function continueAsNewMessage(
     embed.setDescription(`${prevDesc}\n\n↘️ ${oldMessageNote}`);
     await oldMessage.edit({ embeds: [embed], components: [] });
   }
-
-  await interaction.deferUpdate();
 }
 
 async function startRematchAsNewMessage(
@@ -178,7 +181,7 @@ export async function handleNaejeonCommand(
   if (!interaction.guild || !interaction.channel?.isTextBased()) {
     await interaction.reply({
       content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -187,7 +190,7 @@ export async function handleNaejeonCommand(
   if (existing && isActiveState(existing.state)) {
     await interaction.reply({
       content: "이 채널에 이미 진행 중인 내전이 있습니다.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -230,7 +233,7 @@ export async function handleNaejeonButton(
       content:
         "내전 세션이 만료되었습니다. 봇이 재시작되었거나 **오래된 메시지**일 수 있습니다.\n" +
         "해당 메시지 대신 **`/내전`을 다시 입력**해 새로 시작해주세요.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
     return;
   }
@@ -247,14 +250,14 @@ export async function handleNaejeonButton(
       if (!canAdjustParticipants) {
         await interaction.reply({
           content: "현재 참가 신청을 받지 않습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.participants.includes(userId)) {
         await interaction.reply({
           content: "이미 참가 신청하셨습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -266,14 +269,14 @@ export async function handleNaejeonButton(
       if (!canAdjustParticipants) {
         await interaction.reply({
           content: "현재 참가 취소를 할 수 없습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (!session.participants.includes(userId)) {
         await interaction.reply({
           content: "참가 신청하지 않으셨습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -288,14 +291,14 @@ export async function handleNaejeonButton(
       if (session.state !== "registering") {
         await interaction.reply({
           content: "이미 마감되었습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.participants.length < 2) {
         await interaction.reply({
           content: "최소 2명 이상 참가해야 내전을 시작할 수 있습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -308,14 +311,14 @@ export async function handleNaejeonButton(
       if (session.state !== "selecting_captains") {
         await interaction.reply({
           content: "현재 팀장 선택 단계가 아닙니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (!payload || !session.participants.includes(payload)) {
         await interaction.reply({
           content: "유효하지 않은 참가자입니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -326,7 +329,7 @@ export async function handleNaejeonButton(
         } else if (session.captainCandidates.length >= 2) {
           await interaction.reply({
             content: "팀장은 2명까지만 선택할 수 있습니다.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           return;
         } else {
@@ -340,14 +343,14 @@ export async function handleNaejeonButton(
       if (session.state !== "selecting_captains") {
         await interaction.reply({
           content: "현재 팀장 선택 단계가 아닙니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.captainCandidates.length !== 2) {
         await interaction.reply({
           content: "팀장 2명을 선택해주세요.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -366,7 +369,7 @@ export async function handleNaejeonButton(
       if (session.state !== "drafting") {
         await interaction.reply({
           content: "현재 드래프트 단계가 아닙니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -375,14 +378,14 @@ export async function handleNaejeonButton(
         if (!canActForCurrentCaptain(session, userId, interaction)) {
           await interaction.reply({
             content: `<@${currentCaptain}> 팀장님, 호스트 <@${session.hostId}>, 또는 **서버 관리자**만 진행할 수 있습니다.`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           return;
         }
         if (!payload || !session.remaining.includes(payload)) {
           await interaction.reply({
             content: "선택할 수 없는 플레이어입니다.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           return;
         }
@@ -400,7 +403,7 @@ export async function handleNaejeonButton(
       if (session.state !== "drafting") {
         await interaction.reply({
           content: "현재 드래프트 단계가 아닙니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -409,14 +412,14 @@ export async function handleNaejeonButton(
         if (!canActForCurrentCaptain(session, userId, interaction)) {
           await interaction.reply({
             content: `<@${currentCaptain}> 팀장님, 호스트 <@${session.hostId}>, 또는 **서버 관리자**만 진행할 수 있습니다.`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           return;
         }
         if (session.draftSelections.length === 0) {
           await interaction.reply({
             content: "뽑기 전에 후보를 한 명 이상 선택해주세요.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
           return;
         }
@@ -434,21 +437,21 @@ export async function handleNaejeonButton(
       if (session.state === "cancelled" || session.state === "ended") {
         await interaction.reply({
           content: "이미 종료된 내전입니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.state === "complete") {
         await interaction.reply({
           content: "팀 구성이 완료된 내전은 **내전 종료** 버튼을 사용해주세요.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (!canActAsHost(session, userId, interaction)) {
         await interaction.reply({
           content: `내전 취소는 <@${session.hostId}> 호스트 또는 **서버 관리자**만 할 수 있습니다.`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -459,21 +462,21 @@ export async function handleNaejeonButton(
       if (session.state === "cancelled" || session.state === "ended") {
         await interaction.reply({
           content: "이미 종료된 내전입니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.state !== "complete") {
         await interaction.reply({
           content: "팀 구성이 완료된 후 **내전 종료**를 할 수 있습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (!canActAsHost(session, userId, interaction)) {
         await interaction.reply({
           content: `내전 종료는 <@${session.hostId}> 호스트 또는 **서버 관리자**만 할 수 있습니다.`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
@@ -484,14 +487,14 @@ export async function handleNaejeonButton(
       if (session.state !== "complete") {
         await interaction.reply({
           content: "팀 구성 완료 후 **재경기**를 할 수 있습니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
       if (session.participants.length < 2) {
         await interaction.reply({
           content: "재경기를 하려면 최소 2명 이상의 참가자가 필요합니다.",
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
         return;
       }
