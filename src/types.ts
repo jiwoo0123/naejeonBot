@@ -20,6 +20,8 @@ export interface NaejeonSession {
   remaining: string[];
   currentPickerIndex: number;
   draftSelections: string[];
+  kickMode: boolean;
+  kickSelections: string[];
   redTeamCaptainId: string | null;
   isRematch: boolean;
   pickOrderRolls: Record<string, number>;
@@ -49,6 +51,8 @@ export function resetForRematch(session: NaejeonSession): void {
   session.remaining = [];
   session.currentPickerIndex = 0;
   session.draftSelections = [];
+  session.kickMode = false;
+  session.kickSelections = [];
   session.redTeamCaptainId = null;
   session.pickOrderRolls = {};
 }
@@ -73,6 +77,8 @@ export function createSession(
     remaining: [],
     currentPickerIndex: 0,
     draftSelections: [],
+    kickMode: false,
+    kickSelections: [],
     redTeamCaptainId: null,
     isRematch: false,
     pickOrderRolls: {},

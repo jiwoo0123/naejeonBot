@@ -24,6 +24,8 @@ function resetForRematch(session) {
     session.remaining = [];
     session.currentPickerIndex = 0;
     session.draftSelections = [];
+    session.kickMode = false;
+    session.kickSelections = [];
     session.redTeamCaptainId = null;
     session.pickOrderRolls = {};
 }
@@ -42,6 +44,8 @@ function createSession(id, channelId, messageId, hostId) {
         remaining: [],
         currentPickerIndex: 0,
         draftSelections: [],
+        kickMode: false,
+        kickSelections: [],
         redTeamCaptainId: null,
         isRematch: false,
         pickOrderRolls: {},

@@ -1,6 +1,6 @@
 {
   "name": "naejeon-bot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "롤 내전 전용 디스코드 봇",
   "main": "dist/index.js",
   "scripts": {

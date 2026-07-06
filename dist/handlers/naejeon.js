@@ -82,6 +82,8 @@ function startDraft(session) {
     session.state = "drafting";
     session.currentPickerIndex = 0;
     session.draftSelections = [];
+    session.kickMode = false;
+    session.kickSelections = [];
     const [c1, c2] = session.captains;
     session.teams = { [c1]: [], [c2]: [] };
     session.remaining = session.participants.filter((id) => !session.captains.includes(id));
@@ -97,8 +99,16 @@ function advanceAfterPick(session) {
 }
 function finishDraft(session) {
     session.state = "complete";
+    session.kickMode = false;
+    session.kickSelections = [];
     const [c1, c2] = session.captains;
     session.redTeamCaptainId = Math.random() < 0.5 ? c1 : c2;
+}
+function expelPlayers(session, userIds) {
+    session.participants = session.participants.filter((id) => !userIds.includes(id));
+    session.remaining = session.remaining.filter((id) => !userIds.includes(id));
+    session.draftSelections = session.draftSelections.filter((id) => !userIds.includes(id));
+    session.kickSelections = session.kickSelections.filter((id) => !userIds.includes(id));
 }
 async function handleNaejeonCommand(interaction) {
     if (!interaction.guild || !interaction.channel?.isTextBased()) {
@@ -260,9 +270,11 @@ async function handleNaejeonButton(interaction) {
             await continueAsNewMessage(interaction, session, guild, "**팀원 선택**이 아래에서 시작되었습니다.");
             return;
         case "draft_select":
-            if (session.state !== "drafting") {
+            if (session.state !== "drafting" || session.kickMode) {
                 await interaction.reply({
-                    content: "현재 드래프트 단계가 아닙니다.",
+                    content: session.kickMode
+                        ? "보내기 모드입니다. **뽑기로** 버튼을 눌러 뽑기 화면으로 돌아가세요."
+                        : "현재 드래프트 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -294,9 +306,11 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "draft_pick":
-            if (session.state !== "drafting") {
+            if (session.state !== "drafting" || session.kickMode) {
                 await interaction.reply({
-                    content: "현재 드래프트 단계가 아닙니다.",
+                    content: session.kickMode
+                        ? "보내기 모드입니다. **뽑기로** 버튼을 눌러주세요."
+                        : "현재 드래프트 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -321,6 +335,108 @@ async function handleNaejeonButton(interaction) {
                 session.teams[currentCaptain].push(...pickedIds);
                 session.remaining = session.remaining.filter((id) => !pickedIds.includes(id));
                 advanceAfterPick(session);
+            }
+            await refresh(interaction, session, guild);
+            return;
+        case "kick_mode":
+            if (session.state !== "drafting") {
+                await interaction.reply({
+                    content: "현재 드래프트 단계가 아닙니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (!canActAsHost(session, userId, interaction)) {
+                await interaction.reply({
+                    content: "보내기는 호스트 또는 **서버 관리자**만 사용할 수 있습니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            session.kickMode = true;
+            session.draftSelections = [];
+            session.kickSelections = [];
+            await refresh(interaction, session, guild);
+            return;
+        case "pick_mode":
+            if (session.state !== "drafting") {
+                await interaction.reply({
+                    content: "현재 드래프트 단계가 아닙니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (!canActAsHost(session, userId, interaction)) {
+                await interaction.reply({
+                    content: "호스트 또는 **서버 관리자**만 전환할 수 있습니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            session.kickMode = false;
+            session.kickSelections = [];
+            await refresh(interaction, session, guild);
+            return;
+        case "kick_select":
+            if (session.state !== "drafting" || !session.kickMode) {
+                await interaction.reply({
+                    content: "보내기 모드가 아닙니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (!canActAsHost(session, userId, interaction)) {
+                await interaction.reply({
+                    content: "보내기는 호스트 또는 **서버 관리자**만 사용할 수 있습니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (!payload || !session.remaining.includes(payload)) {
+                await interaction.reply({
+                    content: "보낼 수 없는 플레이어입니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            {
+                const idx = session.kickSelections.indexOf(payload);
+                if (idx >= 0) {
+                    session.kickSelections.splice(idx, 1);
+                }
+                else {
+                    session.kickSelections.push(payload);
+                }
+            }
+            await refresh(interaction, session, guild);
+            return;
+        case "kick_confirm":
+            if (session.state !== "drafting" || !session.kickMode) {
+                await interaction.reply({
+                    content: "보내기 모드가 아닙니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (!canActAsHost(session, userId, interaction)) {
+                await interaction.reply({
+                    content: "보내기는 호스트 또는 **서버 관리자**만 사용할 수 있습니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            if (session.kickSelections.length === 0) {
+                await interaction.reply({
+                    content: "보내기 전에 대상을 한 명 이상 선택해주세요.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            expelPlayers(session, [...session.kickSelections]);
+            session.kickMode = false;
+            session.kickSelections = [];
+            if (session.remaining.length === 0) {
+                finishDraft(session);
             }
             await refresh(interaction, session, guild);
             return;
