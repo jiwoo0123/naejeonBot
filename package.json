@@ -1,11 +1,10 @@
 {
   "name": "naejeon-bot",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "롤 내전 전용 디스코드 봇",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "prestart": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "register": "tsx src/register-commands.ts"
@@ -13,12 +12,12 @@
   "keywords": ["discord", "lol", "naejeon"],
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^22.10.2",
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.7",
-    "typescript": "^5.7.2"
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "tsx": "^4.19.2"
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }
