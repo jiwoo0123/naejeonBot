@@ -56,10 +56,11 @@ async function terminateSession(
   await interaction.deferUpdate();
 }
 
-async function startRematchAsNewMessage(
+async function continueAsNewMessage(
   interaction: ButtonInteraction,
   session: NaejeonSession,
-  guild: Guild | null
+  guild: Guild | null,
+  oldMessageNote: string
 ): Promise<void> {
   const channel = guild?.channels.cache.get(session.channelId) as
     | TextChannel
@@ -76,8 +77,6 @@ async function startRematchAsNewMessage(
     .fetch(session.messageId)
     .catch(() => null);
 
-  resetForRematch(session);
-
   const payload = await buildMessagePayload(session, guild);
   const newMessage = await channel.send(payload);
 
@@ -87,13 +86,25 @@ async function startRematchAsNewMessage(
   if (oldMessage?.embeds[0]) {
     const embed = EmbedBuilder.from(oldMessage.embeds[0]);
     const prevDesc = oldMessage.embeds[0].description ?? "";
-    embed.setDescription(
-      `${prevDesc}\n\n↘️ **재경기**가 아래에서 시작되었습니다.`
-    );
+    embed.setDescription(`${prevDesc}\n\n↘️ ${oldMessageNote}`);
     await oldMessage.edit({ embeds: [embed], components: [] });
   }
 
   await interaction.deferUpdate();
+}
+
+async function startRematchAsNewMessage(
+  interaction: ButtonInteraction,
+  session: NaejeonSession,
+  guild: Guild | null
+): Promise<void> {
+  resetForRematch(session);
+  await continueAsNewMessage(
+    interaction,
+    session,
+    guild,
+    "**재경기**가 아래에서 시작되었습니다."
+  );
 }
 
 function isActiveState(state: NaejeonSession["state"]): boolean {
@@ -257,13 +268,6 @@ export async function handleNaejeonButton(
         });
         return;
       }
-      if (userId !== session.hostId) {
-        await interaction.reply({
-          content: `내전을 연 <@${session.hostId}>만 마감할 수 있습니다.`,
-          ephemeral: true,
-        });
-        return;
-      }
       if (session.participants.length < 2) {
         await interaction.reply({
           content: "최소 2명 이상 참가해야 내전을 시작할 수 있습니다.",
@@ -340,7 +344,12 @@ export async function handleNaejeonButton(
       session.captains = [...session.captainCandidates];
       rollPickOrder(session);
       startDraft(session);
-      await refresh(interaction, session, guild);
+      await continueAsNewMessage(
+        interaction,
+        session,
+        guild,
+        "**팀원 선택**이 아래에서 시작되었습니다."
+      );
       return;
 
     case "draft_select":
