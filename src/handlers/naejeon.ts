@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   Guild,
+  PermissionFlagsBits,
   TextChannel,
 } from "discord.js";
 import {
@@ -111,12 +112,35 @@ function isActiveState(state: NaejeonSession["state"]): boolean {
   return !["complete", "cancelled", "ended"].includes(state);
 }
 
+function isServerAdmin(interaction: ButtonInteraction): boolean {
+  if (!interaction.inGuild()) return false;
+  const perms = interaction.memberPermissions;
+  if (!perms) return false;
+  return (
+    perms.has(PermissionFlagsBits.Administrator) ||
+    perms.has(PermissionFlagsBits.ManageGuild)
+  );
+}
+
+function canActAsHost(
+  session: NaejeonSession,
+  userId: string,
+  interaction: ButtonInteraction
+): boolean {
+  return userId === session.hostId || isServerAdmin(interaction);
+}
+
 function canActForCurrentCaptain(
   session: NaejeonSession,
-  userId: string
+  userId: string,
+  interaction: ButtonInteraction
 ): boolean {
   const currentCaptain = session.pickOrder[session.currentPickerIndex];
-  return userId === currentCaptain || userId === session.hostId;
+  return (
+    userId === currentCaptain ||
+    userId === session.hostId ||
+    isServerAdmin(interaction)
+  );
 }
 
 function startDraft(session: NaejeonSession): void {
@@ -348,9 +372,9 @@ export async function handleNaejeonButton(
       }
       {
         const currentCaptain = session.pickOrder[session.currentPickerIndex];
-        if (!canActForCurrentCaptain(session, userId)) {
+        if (!canActForCurrentCaptain(session, userId, interaction)) {
           await interaction.reply({
-            content: `<@${currentCaptain}> 팀장님 또는 호스트 <@${session.hostId}>만 진행할 수 있습니다.`,
+            content: `<@${currentCaptain}> 팀장님, 호스트 <@${session.hostId}>, 또는 **서버 관리자**만 진행할 수 있습니다.`,
             ephemeral: true,
           });
           return;
@@ -382,9 +406,9 @@ export async function handleNaejeonButton(
       }
       {
         const currentCaptain = session.pickOrder[session.currentPickerIndex];
-        if (!canActForCurrentCaptain(session, userId)) {
+        if (!canActForCurrentCaptain(session, userId, interaction)) {
           await interaction.reply({
-            content: `<@${currentCaptain}> 팀장님 또는 호스트 <@${session.hostId}>만 진행할 수 있습니다.`,
+            content: `<@${currentCaptain}> 팀장님, 호스트 <@${session.hostId}>, 또는 **서버 관리자**만 진행할 수 있습니다.`,
             ephemeral: true,
           });
           return;
@@ -421,9 +445,9 @@ export async function handleNaejeonButton(
         });
         return;
       }
-      if (userId !== session.hostId) {
+      if (!canActAsHost(session, userId, interaction)) {
         await interaction.reply({
-          content: `내전 취소는 <@${session.hostId}> 호스트만 할 수 있습니다.`,
+          content: `내전 취소는 <@${session.hostId}> 호스트 또는 **서버 관리자**만 할 수 있습니다.`,
           ephemeral: true,
         });
         return;
@@ -446,9 +470,9 @@ export async function handleNaejeonButton(
         });
         return;
       }
-      if (userId !== session.hostId) {
+      if (!canActAsHost(session, userId, interaction)) {
         await interaction.reply({
-          content: `내전 종료는 <@${session.hostId}> 호스트만 할 수 있습니다.`,
+          content: `내전 종료는 <@${session.hostId}> 호스트 또는 **서버 관리자**만 할 수 있습니다.`,
           ephemeral: true,
         });
         return;
