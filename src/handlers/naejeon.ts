@@ -479,13 +479,6 @@ export async function handleNaejeonButton(
         });
         return;
       }
-      if (userId !== session.hostId) {
-        await interaction.reply({
-          content: `재경기는 <@${session.hostId}> 호스트만 시작할 수 있습니다.`,
-          ephemeral: true,
-        });
-        return;
-      }
       if (session.participants.length < 2) {
         await interaction.reply({
           content: "재경기를 하려면 최소 2명 이상의 참가자가 필요합니다.",
