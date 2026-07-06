@@ -330,7 +330,6 @@ export async function buildComponents(
 
     case "selecting_captains": {
       const participantRows = chunk(session.participants, 5);
-      const selectAction = session.kickMode ? "kick_select" : "captain";
 
       for (const group of participantRows.slice(0, 3)) {
         const row = new ActionRowBuilder<ButtonBuilder>();

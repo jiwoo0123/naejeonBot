@@ -243,7 +243,6 @@ async function buildComponents(session, guild) {
         }
         case "selecting_captains": {
             const participantRows = chunk(session.participants, 5);
-            const selectAction = session.kickMode ? "kick_select" : "captain";
             for (const group of participantRows.slice(0, 3)) {
                 const row = new discord_js_1.ActionRowBuilder();
                 for (const userId of group) {
