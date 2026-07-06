@@ -29,6 +29,7 @@ const client = new Client({
 
 client.once(Events.ClientReady, (c) => {
   console.log(`봇 준비 완료: ${c.user.tag}`);
+  console.log(`코드 버전: ${process.env.npm_package_version ?? "unknown"}`);
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
