@@ -127,10 +127,8 @@ export async function buildEmbed(
       const captainNames = await displayNames(guild, session.captainCandidates);
       const desc = session.isRematch
         ? "재경기 — 팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.\n" +
-          "인원 변경이 필요하면 **추가 신청** / **빠지기** 버튼을 사용하세요.\n" +
-          `(호스트 <@${session.hostId}>만 팀장 확정 가능)`
-        : "팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.\n" +
-          `(호스트 <@${session.hostId}>만 확정 가능)`;
+          "인원 변경이 필요하면 **추가 신청** / **빠지기** 버튼을 사용하세요."
+        : "팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.";
       embed.setDescription(desc);
       embed.addFields(
         {

@@ -288,13 +288,6 @@ export async function handleNaejeonButton(
         });
         return;
       }
-      if (userId !== session.hostId) {
-        await interaction.reply({
-          content: "팀장 선택은 내전을 연 호스트만 할 수 있습니다.",
-          ephemeral: true,
-        });
-        return;
-      }
       if (!payload || !session.participants.includes(payload)) {
         await interaction.reply({
           content: "유효하지 않은 참가자입니다.",
@@ -323,13 +316,6 @@ export async function handleNaejeonButton(
       if (session.state !== "selecting_captains") {
         await interaction.reply({
           content: "현재 팀장 선택 단계가 아닙니다.",
-          ephemeral: true,
-        });
-        return;
-      }
-      if (userId !== session.hostId) {
-        await interaction.reply({
-          content: "팀장 확정은 내전을 연 호스트만 할 수 있습니다.",
           ephemeral: true,
         });
         return;
