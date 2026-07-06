@@ -125,24 +125,46 @@ export async function buildEmbed(
     case "selecting_captains": {
       const names = await displayNames(guild, session.participants);
       const captainNames = await displayNames(guild, session.captainCandidates);
-      const desc = session.isRematch
-        ? "재경기 — 팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.\n" +
-          "인원 변경이 필요하면 **추가 신청** / **빠지기** 버튼을 사용하세요."
-        : "팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.";
-      embed.setDescription(desc);
-      embed.addFields(
-        {
-          name: `참가자 (${session.participants.length}명)`,
-          value: names.map((n) => `• ${n}`).join("\n"),
-        },
-        {
-          name: `선택된 팀장 (${session.captainCandidates.length}/2)`,
-          value:
-            captainNames.length > 0
-              ? captainNames.map((n) => `⭐ ${n}`).join("\n")
-              : "아직 선택되지 않음",
-        }
-      );
+      const kickNames = await displayNames(guild, session.kickSelections);
+
+      if (session.kickMode) {
+        embed.setDescription(
+          "🚪 **보내기 모드** —보낼 참가자를 선택한 뒤 **보내기** 버튼을 눌러주세요.\n" +
+            `(호스트 또는 **서버 관리자**만 사용 가능)`
+        );
+        embed.addFields(
+          {
+            name: `참가자 (${session.participants.length}명)`,
+            value: names.map((n) => `• ${n}`).join("\n"),
+          },
+          {
+            name: `보내기 대상 (${session.kickSelections.length}명)`,
+            value:
+              kickNames.length > 0
+                ? kickNames.map((n) => `• ${n}`).join("\n")
+                : "아직 선택하지 않음",
+          }
+        );
+      } else {
+        const desc = session.isRematch
+          ? "재경기 — 팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.\n" +
+            "인원 변경이 필요하면 **추가 신청** / **빠지기** 버튼을 사용하세요."
+          : "팀장이 될 **2명**을 선택한 뒤 **팀장 확정** 버튼을 눌러주세요.";
+        embed.setDescription(desc);
+        embed.addFields(
+          {
+            name: `참가자 (${session.participants.length}명)`,
+            value: names.map((n) => `• ${n}`).join("\n"),
+          },
+          {
+            name: `선택된 팀장 (${session.captainCandidates.length}/2)`,
+            value:
+              captainNames.length > 0
+                ? captainNames.map((n) => `⭐ ${n}`).join("\n")
+                : "아직 선택되지 않음",
+          }
+        );
+      }
       break;
     }
 
@@ -150,7 +172,6 @@ export async function buildEmbed(
       const currentCaptain = session.pickOrder[session.currentPickerIndex];
       const remainingNames = await displayNames(guild, session.remaining);
       const selectedNames = await displayNames(guild, session.draftSelections);
-      const kickNames = await displayNames(guild, session.kickSelections);
       const firstPicker = await displayName(guild, session.pickOrder[0]);
       const secondPicker = await displayName(guild, session.pickOrder[1]);
       const [c1, c2] = session.captains;
@@ -160,24 +181,17 @@ export async function buildEmbed(
       const roll2 = session.pickOrderRolls[c2] ?? 0;
 
       embed.setDescription(
-        session.kickMode
-          ? `🚪 **보내기 모드** —보낼 팀원을 선택한 뒤 **보내기** 버튼을 눌러주세요.\n` +
-            `(호스트 또는 **서버 관리자**만 사용 가능)`
-          : `🎲 **주사위(1~100)** 로 선·후픽 순서를 정했습니다!\n` +
-            `${n1} **${roll1}** vs ${n2} **${roll2}**\n` +
-            `🏆 **선픽:** ${firstPicker} · **후픽:** ${secondPicker}\n\n` +
-            `<@${currentCaptain}> 팀장님, 데려갈 팀원을 **복수 선택**한 뒤 **뽑기** 버튼을 눌러주세요.\n` +
-            `선택한 인원이 **모두** 팀에 합류합니다.\n` +
-            `(호스트 또는 **서버 관리자**가 대신 진행·보내기 할 수 있습니다)`
+        `🎲 **주사위(1~100)** 로 선·후픽 순서를 정했습니다!\n` +
+          `${n1} **${roll1}** vs ${n2} **${roll2}**\n` +
+          `🏆 **선픽:** ${firstPicker} · **후픽:** ${secondPicker}\n\n` +
+          `<@${currentCaptain}> 팀장님, 데려갈 팀원을 **복수 선택**한 뒤 **뽑기** 버튼을 눌러주세요.\n` +
+          `선택한 인원이 **모두** 팀에 합류합니다.\n` +
+          `(호스트 또는 **서버 관리자**가 대신 진행할 수 있습니다)`
       );
       embed.addFields(
         {
-          name: session.kickMode ? "🚪 보내기 대상" : "🎯 현재 차례",
-          value: session.kickMode
-            ? kickNames.length > 0
-              ? kickNames.map((n) => `• ${n}`).join("\n")
-              : "아직 선택하지 않음"
-            : `<@${currentCaptain}> (선택 ${session.draftSelections.length}명)`,
+          name: "🎯 현재 차례",
+          value: `<@${currentCaptain}> (선택 ${session.draftSelections.length}명)`,
         },
         {
           name: `남은 인원 (${session.remaining.length}명)`,
@@ -316,82 +330,34 @@ export async function buildComponents(
 
     case "selecting_captains": {
       const participantRows = chunk(session.participants, 5);
-      for (const group of participantRows.slice(0, 4)) {
+      const selectAction = session.kickMode ? "kick_select" : "captain";
+
+      for (const group of participantRows.slice(0, 3)) {
         const row = new ActionRowBuilder<ButtonBuilder>();
         for (const userId of group) {
           const name = await displayName(guild, userId);
-          const isSelected = session.captainCandidates.includes(userId);
-          row.addComponents(
-            new ButtonBuilder()
-              .setCustomId(buttonId(session.id, "captain", userId))
-              .setLabel(name.slice(0, 80))
-              .setStyle(isSelected ? ButtonStyle.Primary : ButtonStyle.Secondary)
-              .setEmoji(isSelected ? "⭐" : "👤")
-          );
-        }
-        rows.push(row);
-      }
-      rows.push(
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setCustomId(buttonId(session.id, "confirm_captains"))
-            .setLabel("팀장 확정")
-            .setStyle(ButtonStyle.Success)
-            .setDisabled(session.captainCandidates.length !== 2)
-            .setEmoji("✅"),
-          ...(session.isRematch
-            ? [
-                new ButtonBuilder()
-                  .setCustomId(buttonId(session.id, "join"))
-                  .setLabel("추가 신청")
-                  .setStyle(ButtonStyle.Primary)
-                  .setEmoji("➕"),
-                new ButtonBuilder()
-                  .setCustomId(buttonId(session.id, "leave"))
-                  .setLabel("빠지기")
-                  .setStyle(ButtonStyle.Secondary)
-                  .setEmoji("👋"),
-              ]
-            : [])
-        )
-      );
-      {
-        const hostRow = buildHostControlRow(session);
-        if (hostRow) rows.push(hostRow);
-      }
-      break;
-    }
-
-    case "drafting": {
-      const currentCaptain = session.pickOrder[session.currentPickerIndex];
-      const remainingRows = chunk(session.remaining, 5);
-      const selectAction = session.kickMode ? "kick_select" : "draft_select";
-      const selections = session.kickMode
-        ? session.kickSelections
-        : session.draftSelections;
-
-      for (const group of remainingRows.slice(0, 3)) {
-        const row = new ActionRowBuilder<ButtonBuilder>();
-        for (const userId of group) {
-          const name = await displayName(guild, userId);
-          const isSelected = selections.includes(userId);
-          row.addComponents(
-            new ButtonBuilder()
-              .setCustomId(buttonId(session.id, selectAction, userId))
-              .setLabel(
-                session.kickMode
-                  ? `🚪 ${name.slice(0, 76)}`
-                  : name.slice(0, 80)
-              )
-              .setStyle(
-                isSelected
-                  ? session.kickMode
-                    ? ButtonStyle.Danger
-                    : ButtonStyle.Success
-                  : ButtonStyle.Secondary
-              )
-              .setDisabled(!session.kickMode && userId === currentCaptain)
-          );
+          if (session.kickMode) {
+            const isSelected = session.kickSelections.includes(userId);
+            row.addComponents(
+              new ButtonBuilder()
+                .setCustomId(buttonId(session.id, "kick_select", userId))
+                .setLabel(`🚪 ${name.slice(0, 76)}`)
+                .setStyle(
+                  isSelected ? ButtonStyle.Danger : ButtonStyle.Secondary
+                )
+            );
+          } else {
+            const isSelected = session.captainCandidates.includes(userId);
+            row.addComponents(
+              new ButtonBuilder()
+                .setCustomId(buttonId(session.id, "captain", userId))
+                .setLabel(name.slice(0, 80))
+                .setStyle(
+                  isSelected ? ButtonStyle.Primary : ButtonStyle.Secondary
+                )
+                .setEmoji(isSelected ? "⭐" : "👤")
+            );
+          }
         }
         rows.push(row);
       }
@@ -406,10 +372,10 @@ export async function buildComponents(
               .setEmoji("🚪")
               .setDisabled(session.kickSelections.length === 0),
             new ButtonBuilder()
-              .setCustomId(buttonId(session.id, "pick_mode"))
-              .setLabel("뽑기로")
+              .setCustomId(buttonId(session.id, "captain_mode"))
+              .setLabel("팀장선택으로")
               .setStyle(ButtonStyle.Secondary)
-              .setEmoji("🎲"),
+              .setEmoji("⭐"),
             new ButtonBuilder()
               .setCustomId(buttonId(session.id, "cancel"))
               .setLabel("내전 취소")
@@ -421,23 +387,78 @@ export async function buildComponents(
         rows.push(
           new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
-              .setCustomId(buttonId(session.id, "draft_pick"))
-              .setLabel("뽑기")
-              .setStyle(ButtonStyle.Danger)
-              .setEmoji("🎲")
-              .setDisabled(session.draftSelections.length === 0),
-            new ButtonBuilder()
-              .setCustomId(buttonId(session.id, "kick_mode"))
-              .setLabel("보내기")
-              .setStyle(ButtonStyle.Secondary)
-              .setEmoji("🚪"),
+              .setCustomId(buttonId(session.id, "confirm_captains"))
+              .setLabel("팀장 확정")
+              .setStyle(ButtonStyle.Success)
+              .setDisabled(session.captainCandidates.length !== 2)
+              .setEmoji("✅"),
+            ...(session.isRematch
+              ? [
+                  new ButtonBuilder()
+                    .setCustomId(buttonId(session.id, "join"))
+                    .setLabel("추가 신청")
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji("➕"),
+                  new ButtonBuilder()
+                    .setCustomId(buttonId(session.id, "leave"))
+                    .setLabel("빠지기")
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji("👋"),
+                ]
+              : [])
+          )
+        );
+        rows.push(
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
               .setCustomId(buttonId(session.id, "cancel"))
               .setLabel("내전 취소")
               .setStyle(ButtonStyle.Secondary)
-              .setEmoji("🚫")
+              .setEmoji("🚫"),
+            new ButtonBuilder()
+              .setCustomId(buttonId(session.id, "kick_mode"))
+              .setLabel("보내기")
+              .setStyle(ButtonStyle.Secondary)
+              .setEmoji("🚪")
           )
         );
+      }
+      break;
+    }
+
+    case "drafting": {
+      const currentCaptain = session.pickOrder[session.currentPickerIndex];
+      const remainingRows = chunk(session.remaining, 5);
+
+      for (const group of remainingRows.slice(0, 4)) {
+        const row = new ActionRowBuilder<ButtonBuilder>();
+        for (const userId of group) {
+          const name = await displayName(guild, userId);
+          const isSelected = session.draftSelections.includes(userId);
+          row.addComponents(
+            new ButtonBuilder()
+              .setCustomId(buttonId(session.id, "draft_select", userId))
+              .setLabel(name.slice(0, 80))
+              .setStyle(isSelected ? ButtonStyle.Success : ButtonStyle.Secondary)
+              .setDisabled(userId === currentCaptain)
+          );
+        }
+        rows.push(row);
+      }
+
+      rows.push(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(buttonId(session.id, "draft_pick"))
+            .setLabel("뽑기")
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji("🎲")
+            .setDisabled(session.draftSelections.length === 0)
+        )
+      );
+      {
+        const hostRow = buildHostControlRow(session);
+        if (hostRow) rows.push(hostRow);
       }
       break;
     }

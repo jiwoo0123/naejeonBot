@@ -104,10 +104,9 @@ function finishDraft(session) {
     const [c1, c2] = session.captains;
     session.redTeamCaptainId = Math.random() < 0.5 ? c1 : c2;
 }
-function expelPlayers(session, userIds) {
+function expelParticipants(session, userIds) {
     session.participants = session.participants.filter((id) => !userIds.includes(id));
-    session.remaining = session.remaining.filter((id) => !userIds.includes(id));
-    session.draftSelections = session.draftSelections.filter((id) => !userIds.includes(id));
+    session.captainCandidates = session.captainCandidates.filter((id) => !userIds.includes(id));
     session.kickSelections = session.kickSelections.filter((id) => !userIds.includes(id));
 }
 async function handleNaejeonCommand(interaction) {
@@ -214,12 +213,16 @@ async function handleNaejeonButton(interaction) {
             }
             session.state = "selecting_captains";
             session.captainCandidates = [];
+            session.kickMode = false;
+            session.kickSelections = [];
             await refresh(interaction, session, guild);
             return;
         case "captain":
-            if (session.state !== "selecting_captains") {
+            if (session.state !== "selecting_captains" || session.kickMode) {
                 await interaction.reply({
-                    content: "현재 팀장 선택 단계가 아닙니다.",
+                    content: session.kickMode
+                        ? "보내기 모드입니다. **팀장선택으로** 버튼을 눌러주세요."
+                        : "현재 팀장 선택 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -250,9 +253,11 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "confirm_captains":
-            if (session.state !== "selecting_captains") {
+            if (session.state !== "selecting_captains" || session.kickMode) {
                 await interaction.reply({
-                    content: "현재 팀장 선택 단계가 아닙니다.",
+                    content: session.kickMode
+                        ? "보내기 모드입니다. **팀장선택으로** 버튼을 눌러주세요."
+                        : "현재 팀장 선택 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -270,11 +275,9 @@ async function handleNaejeonButton(interaction) {
             await continueAsNewMessage(interaction, session, guild, "**팀원 선택**이 아래에서 시작되었습니다.");
             return;
         case "draft_select":
-            if (session.state !== "drafting" || session.kickMode) {
+            if (session.state !== "drafting") {
                 await interaction.reply({
-                    content: session.kickMode
-                        ? "보내기 모드입니다. **뽑기로** 버튼을 눌러 뽑기 화면으로 돌아가세요."
-                        : "현재 드래프트 단계가 아닙니다.",
+                    content: "현재 드래프트 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -306,11 +309,9 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "draft_pick":
-            if (session.state !== "drafting" || session.kickMode) {
+            if (session.state !== "drafting") {
                 await interaction.reply({
-                    content: session.kickMode
-                        ? "보내기 모드입니다. **뽑기로** 버튼을 눌러주세요."
-                        : "현재 드래프트 단계가 아닙니다.",
+                    content: "현재 드래프트 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -339,9 +340,9 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "kick_mode":
-            if (session.state !== "drafting") {
+            if (session.state !== "selecting_captains") {
                 await interaction.reply({
-                    content: "현재 드래프트 단계가 아닙니다.",
+                    content: "팀장 선택 단계에서만 보내기를 사용할 수 있습니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -354,14 +355,14 @@ async function handleNaejeonButton(interaction) {
                 return;
             }
             session.kickMode = true;
-            session.draftSelections = [];
+            session.captainCandidates = [];
             session.kickSelections = [];
             await refresh(interaction, session, guild);
             return;
-        case "pick_mode":
-            if (session.state !== "drafting") {
+        case "captain_mode":
+            if (session.state !== "selecting_captains") {
                 await interaction.reply({
-                    content: "현재 드래프트 단계가 아닙니다.",
+                    content: "현재 팀장 선택 단계가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
                 });
                 return;
@@ -378,7 +379,7 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "kick_select":
-            if (session.state !== "drafting" || !session.kickMode) {
+            if (session.state !== "selecting_captains" || !session.kickMode) {
                 await interaction.reply({
                     content: "보내기 모드가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
@@ -392,7 +393,7 @@ async function handleNaejeonButton(interaction) {
                 });
                 return;
             }
-            if (!payload || !session.remaining.includes(payload)) {
+            if (!payload || !session.participants.includes(payload)) {
                 await interaction.reply({
                     content: "보낼 수 없는 플레이어입니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
@@ -411,7 +412,7 @@ async function handleNaejeonButton(interaction) {
             await refresh(interaction, session, guild);
             return;
         case "kick_confirm":
-            if (session.state !== "drafting" || !session.kickMode) {
+            if (session.state !== "selecting_captains" || !session.kickMode) {
                 await interaction.reply({
                     content: "보내기 모드가 아닙니다.",
                     flags: discord_js_1.MessageFlags.Ephemeral,
@@ -432,12 +433,16 @@ async function handleNaejeonButton(interaction) {
                 });
                 return;
             }
-            expelPlayers(session, [...session.kickSelections]);
+            if (session.participants.length - session.kickSelections.length < 2) {
+                await interaction.reply({
+                    content: "보내기 후에도 최소 2명 이상 남아야 합니다.",
+                    flags: discord_js_1.MessageFlags.Ephemeral,
+                });
+                return;
+            }
+            expelParticipants(session, [...session.kickSelections]);
             session.kickMode = false;
             session.kickSelections = [];
-            if (session.remaining.length === 0) {
-                finishDraft(session);
-            }
             await refresh(interaction, session, guild);
             return;
         case "cancel":
