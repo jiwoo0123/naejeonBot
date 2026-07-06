@@ -1,0 +1,60 @@
+import "dotenv/config";
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  Interaction,
+} from "discord.js";
+import {
+  handleNaejeonButton,
+  handleNaejeonCommand,
+} from "./handlers/naejeon";
+import { parseButtonId } from "./ui";
+import { loadSessions } from "./session-store";
+
+const token = process.env.DISCORD_TOKEN;
+
+if (!token) {
+  console.error("DISCORD_TOKEN 환경 변수가 필요합니다.");
+  process.exit(1);
+}
+
+loadSessions();
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+});
+
+client.once(Events.ClientReady, (c) => {
+  console.log(`봇 준비 완료: ${c.user.tag}`);
+});
+
+client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+  try {
+    if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === "내전") {
+        await handleNaejeonCommand(interaction);
+      }
+      return;
+    }
+
+    if (interaction.isButton()) {
+      const parsed = parseButtonId(interaction.customId);
+      if (parsed) {
+        await handleNaejeonButton(interaction);
+      }
+    }
+  } catch (error) {
+    console.error("Interaction error:", error);
+    const msg = { content: "오류가 발생했습니다. 다시 시도해주세요.", ephemeral: true };
+    if (interaction.isRepliable()) {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(msg).catch(() => {});
+      } else {
+        await interaction.reply(msg).catch(() => {});
+      }
+    }
+  }
+});
+
+client.login(token);
