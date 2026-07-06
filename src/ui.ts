@@ -163,6 +163,7 @@ export async function buildEmbed(
           `${n1} **${roll1}** vs ${n2} **${roll2}**\n` +
           `🏆 **선픽:** ${firstPicker} · **후픽:** ${secondPicker}\n\n` +
           `<@${currentCaptain}> 팀장님, 데려갈 팀원을 **복수 선택**한 뒤 **뽑기** 버튼을 눌러주세요.\n` +
+          `선택한 인원이 **모두** 팀에 합류합니다.\n` +
           `(호스트 <@${session.hostId}>가 대신 진행할 수 있습니다)`
       );
       embed.addFields(

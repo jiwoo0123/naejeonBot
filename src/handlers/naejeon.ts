@@ -396,12 +396,11 @@ export async function handleNaejeonButton(
           });
           return;
         }
-        const pickIndex = Math.floor(
-          Math.random() * session.draftSelections.length
+        const pickedIds = [...session.draftSelections];
+        session.teams[currentCaptain].push(...pickedIds);
+        session.remaining = session.remaining.filter(
+          (id) => !pickedIds.includes(id)
         );
-        const pickedId = session.draftSelections[pickIndex];
-        session.teams[currentCaptain].push(pickedId);
-        session.remaining = session.remaining.filter((id) => id !== pickedId);
         advanceAfterPick(session);
       }
       await refresh(interaction, session, guild);
