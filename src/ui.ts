@@ -321,10 +321,20 @@ export async function buildComponents(
             .setEmoji("🔒")
         )
       );
-      {
-        const hostRow = buildHostControlRow(session);
-        if (hostRow) rows.push(hostRow);
-      }
+      rows.push(
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId(buttonId(session.id, "cancel"))
+            .setLabel("내전 취소")
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji("🚫"),
+          new ButtonBuilder()
+            .setCustomId(buttonId(session.id, "repost"))
+            .setLabel("맨 아래로")
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji("⬇️")
+        )
+      );
       break;
     }
 

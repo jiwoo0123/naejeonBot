@@ -460,7 +460,35 @@ export async function handleNaejeonButton(
       session.captainCandidates = [];
       session.kickMode = false;
       session.kickSelections = [];
-      await refresh(interaction, session, guild);
+      await continueAsNewMessage(
+        interaction,
+        session,
+        guild,
+        "**팀장 선정**이 아래에서 시작되었습니다."
+      );
+      return;
+
+    case "repost":
+      if (session.state !== "registering") {
+        await interaction.reply({
+          content: "모집 단계에서만 사용할 수 있습니다.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      if (!canActAsHost(session, userId, interaction)) {
+        await interaction.reply({
+          content: "맨 아래로 보내기는 호스트 또는 **서버 관리자**만 사용할 수 있습니다.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      await continueAsNewMessage(
+        interaction,
+        session,
+        guild,
+        "**모집**이 아래에서 계속됩니다."
+      );
       return;
 
     case "captain":
