@@ -22,6 +22,14 @@ const commands = [
         .setDescription("새 호스트로 지정할 사용자")
         .setRequired(true))
         .toJSON(),
+    new discord_js_1.SlashCommandBuilder()
+        .setName("참가자추가")
+        .setDescription("진행 중인 내전에 참가자를 직접 추가합니다.")
+        .addUserOption((option) => option
+        .setName("참가자")
+        .setDescription("추가할 사용자 (@태그)")
+        .setRequired(true))
+        .toJSON(),
 ];
 const rest = new discord_js_1.REST({ version: "10" }).setToken(token);
 async function main() {

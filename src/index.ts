@@ -8,6 +8,7 @@ import {
   type InteractionReplyOptions,
 } from "discord.js";
 import {
+  handleAddParticipantCommand,
   handleHostChangeCommand,
   handleNaejeonButton,
   handleNaejeonCommand,
@@ -40,6 +41,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
         await handleNaejeonCommand(interaction);
       } else if (interaction.commandName === "호스트변경") {
         await handleHostChangeCommand(interaction);
+      } else if (interaction.commandName === "참가자추가") {
+        await handleAddParticipantCommand(interaction);
       }
       return;
     }

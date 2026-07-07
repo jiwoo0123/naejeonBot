@@ -299,6 +299,78 @@ export async function handleHostChangeCommand(
   });
 }
 
+function canAddParticipants(session: NaejeonSession): boolean {
+  return session.state === "registering" || session.state === "selecting_captains";
+}
+
+export async function handleAddParticipantCommand(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!interaction.guild || !interaction.channel?.isTextBased()) {
+    await interaction.reply({
+      content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const session = getActiveSessionByChannel(interaction.channelId);
+  if (
+    !session ||
+    session.state === "cancelled" ||
+    session.state === "ended"
+  ) {
+    await interaction.reply({
+      content: "이 채널에 진행 중인 내전이 없습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!canAddParticipants(session)) {
+    await interaction.reply({
+      content: "참가자 추가는 **모집** 또는 **팀장 선정** 단계에서만 가능합니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const userId = interaction.user.id;
+  if (!canActAsHost(session, userId, interaction)) {
+    await interaction.reply({
+      content: `참가자 추가는 <@${session.hostId}> 또는 **서버 관리자**만 할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const target = interaction.options.getUser("참가자", true);
+  if (target.bot) {
+    await interaction.reply({
+      content: "봇은 참가자로 추가할 수 없습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (session.participants.includes(target.id)) {
+    await interaction.reply({
+      content: `<@${target.id}>님은 이미 참가자입니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  session.participants.push(target.id);
+  saveSession(session);
+  await updateSessionMessage(session, interaction.guild);
+
+  await interaction.reply({
+    content: `<@${target.id}>님을 참가자로 추가했습니다. (현재 ${session.participants.length}명)`,
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
 export async function handleNaejeonButton(
   interaction: ButtonInteraction
 ): Promise<void> {
