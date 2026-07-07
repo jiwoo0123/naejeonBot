@@ -12,6 +12,7 @@ import {
   handleHostChangeCommand,
   handleNaejeonButton,
   handleNaejeonCommand,
+  handleRemoveParticipantCommand,
 } from "./handlers/naejeon";
 import { parseButtonId } from "./ui";
 import { loadSessions } from "./session-store";
@@ -43,6 +44,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
         await handleHostChangeCommand(interaction);
       } else if (interaction.commandName === "참가자추가") {
         await handleAddParticipantCommand(interaction);
+      } else if (interaction.commandName === "참가자제거") {
+        await handleRemoveParticipantCommand(interaction);
       }
       return;
     }

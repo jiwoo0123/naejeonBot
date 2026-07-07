@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleNaejeonCommand = handleNaejeonCommand;
 exports.handleHostChangeCommand = handleHostChangeCommand;
 exports.handleAddParticipantCommand = handleAddParticipantCommand;
+exports.handleRemoveParticipantCommand = handleRemoveParticipantCommand;
 exports.handleNaejeonButton = handleNaejeonButton;
 const discord_js_1 = require("discord.js");
 const session_store_1 = require("../session-store");
@@ -190,7 +191,7 @@ async function handleHostChangeCommand(interaction) {
         flags: discord_js_1.MessageFlags.Ephemeral,
     });
 }
-function canAddParticipants(session) {
+function canModifyParticipants(session) {
     return session.state === "registering" || session.state === "selecting_captains";
 }
 async function handleAddParticipantCommand(interaction) {
@@ -211,7 +212,7 @@ async function handleAddParticipantCommand(interaction) {
         });
         return;
     }
-    if (!canAddParticipants(session)) {
+    if (!canModifyParticipants(session)) {
         await interaction.reply({
             content: "참가자 추가는 **모집** 또는 **팀장 선정** 단계에서만 가능합니다.",
             flags: discord_js_1.MessageFlags.Ephemeral,
@@ -246,6 +247,55 @@ async function handleAddParticipantCommand(interaction) {
     await updateSessionMessage(session, interaction.guild);
     await interaction.reply({
         content: `<@${target.id}>님을 참가자로 추가했습니다. (현재 ${session.participants.length}명)`,
+        flags: discord_js_1.MessageFlags.Ephemeral,
+    });
+}
+async function handleRemoveParticipantCommand(interaction) {
+    if (!interaction.guild || !interaction.channel?.isTextBased()) {
+        await interaction.reply({
+            content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const session = (0, session_store_1.getActiveSessionByChannel)(interaction.channelId);
+    if (!session ||
+        session.state === "cancelled" ||
+        session.state === "ended") {
+        await interaction.reply({
+            content: "이 채널에 진행 중인 내전이 없습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    if (!canModifyParticipants(session)) {
+        await interaction.reply({
+            content: "참가자 제거는 **모집** 또는 **팀장 선정** 단계에서만 가능합니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const userId = interaction.user.id;
+    if (!canActAsHost(session, userId, interaction)) {
+        await interaction.reply({
+            content: `참가자 제거는 <@${session.hostId}> 또는 **서버 관리자**만 할 수 있습니다.`,
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const target = interaction.options.getUser("참가자", true);
+    if (!session.participants.includes(target.id)) {
+        await interaction.reply({
+            content: `<@${target.id}>님은 참가자가 아닙니다.`,
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    expelParticipants(session, [target.id]);
+    (0, session_store_1.saveSession)(session);
+    await updateSessionMessage(session, interaction.guild);
+    await interaction.reply({
+        content: `<@${target.id}>님을 참가자에서 제거했습니다. (현재 ${session.participants.length}명)`,
         flags: discord_js_1.MessageFlags.Ephemeral,
     });
 }

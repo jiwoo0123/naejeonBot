@@ -30,6 +30,9 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
             else if (interaction.commandName === "참가자추가") {
                 await (0, naejeon_1.handleAddParticipantCommand)(interaction);
             }
+            else if (interaction.commandName === "참가자제거") {
+                await (0, naejeon_1.handleRemoveParticipantCommand)(interaction);
+            }
             return;
         }
         if (interaction.isButton()) {
