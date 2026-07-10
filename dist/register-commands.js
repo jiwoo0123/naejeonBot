@@ -55,6 +55,9 @@ const commands = [
     partyOption(new discord_js_1.SlashCommandBuilder()
         .setName("파티제거")
         .setDescription("진행 중인 파티를 제거(마감)합니다.")).toJSON(),
+    partyOption(new discord_js_1.SlashCommandBuilder()
+        .setName("끌올")
+        .setDescription("파티 메시지를 채널 맨 아래로 끌어올립니다.")).toJSON(),
 ];
 const rest = new discord_js_1.REST({ version: "10" }).setToken(token);
 async function main() {

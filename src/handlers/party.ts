@@ -2,6 +2,7 @@ import {
   AutocompleteInteraction,
   ButtonInteraction,
   ChatInputCommandInteraction,
+  EmbedBuilder,
   Guild,
   MessageFlags,
   PermissionFlagsBits,
@@ -64,6 +65,36 @@ async function closeParty(
   session.state = "closed";
   await updatePartyMessage(session, guild);
   deleteParty(session.id);
+}
+
+async function repostParty(
+  session: PartySession,
+  guild: Guild,
+  targetChannel: TextChannel
+): Promise<void> {
+  const oldChannel = guild.channels.cache.get(session.channelId) as
+    | TextChannel
+    | undefined;
+  const oldMessage =
+    oldChannel && oldChannel.id !== targetChannel.id
+      ? await oldChannel.messages.fetch(session.messageId).catch(() => null)
+      : oldChannel?.id === targetChannel.id
+        ? await targetChannel.messages.fetch(session.messageId).catch(() => null)
+        : null;
+
+  const payload = await buildPartyMessagePayload(session, guild);
+  const newMessage = await targetChannel.send(payload);
+
+  session.channelId = targetChannel.id;
+  session.messageId = newMessage.id;
+  saveParty(session);
+
+  if (oldMessage && oldMessage.id !== newMessage.id && oldMessage.embeds[0]) {
+    const embed = EmbedBuilder.from(oldMessage.embeds[0]);
+    const prevDesc = oldMessage.embeds[0].description ?? "";
+    embed.setDescription(`${prevDesc}\n\n↘️ **아래로 끌올**되었습니다.`);
+    await oldMessage.edit({ embeds: [embed], components: [] });
+  }
 }
 
 function resolvePartyFromOption(
@@ -285,6 +316,42 @@ export async function handlePartyRemoveCommand(
 
   await interaction.reply({
     content: `**${title}** 파티를 제거했습니다.`,
+    flags: MessageFlags.Ephemeral,
+  });
+}
+
+export async function handlePartyRepostCommand(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!interaction.guild || !interaction.channel?.isTextBased()) {
+    await interaction.reply({
+      content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const session = resolvePartyFromOption(interaction);
+  if (!session) {
+    await interaction.reply({
+      content: "선택한 파티를 찾을 수 없습니다. 이미 마감되었을 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!canManageParty(session, interaction.user.id, interaction)) {
+    await interaction.reply({
+      content: `끌올은 <@${session.hostId}> 주최자 또는 **서버 관리자**만 할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await repostParty(session, interaction.guild, interaction.channel as TextChannel);
+
+  await interaction.reply({
+    content: `**${session.title}** 파티를 채널 맨 아래로 끌올했습니다.`,
     flags: MessageFlags.Ephemeral,
   });
 }

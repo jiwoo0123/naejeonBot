@@ -22,7 +22,7 @@ client.once(discord_js_1.Events.ClientReady, (c) => {
 client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
     try {
         if (interaction.isAutocomplete()) {
-            const partyCommands = ["참가자추가", "참가자제거", "파티제거"];
+            const partyCommands = ["참가자추가", "참가자제거", "파티제거", "끌올"];
             if (partyCommands.includes(interaction.commandName)) {
                 await (0, party_1.handlePartyAutocomplete)(interaction);
             }
@@ -40,6 +40,9 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
             }
             else if (interaction.commandName === "파티제거") {
                 await (0, party_1.handlePartyRemoveCommand)(interaction);
+            }
+            else if (interaction.commandName === "끌올") {
+                await (0, party_1.handlePartyRepostCommand)(interaction);
             }
             return;
         }

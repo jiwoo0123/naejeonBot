@@ -13,6 +13,7 @@ import {
   handlePartyButton,
   handlePartyCreateCommand,
   handlePartyRemoveCommand,
+  handlePartyRepostCommand,
   handleRemoveParticipantCommand,
 } from "./handlers/party";
 import { parsePartyButtonId } from "./party-ui";
@@ -40,7 +41,7 @@ client.once(Events.ClientReady, (c) => {
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   try {
     if (interaction.isAutocomplete()) {
-      const partyCommands = ["참가자추가", "참가자제거", "파티제거"];
+      const partyCommands = ["참가자추가", "참가자제거", "파티제거", "끌올"];
       if (partyCommands.includes(interaction.commandName)) {
         await handlePartyAutocomplete(interaction);
       }
@@ -56,6 +57,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
         await handleRemoveParticipantCommand(interaction);
       } else if (interaction.commandName === "파티제거") {
         await handlePartyRemoveCommand(interaction);
+      } else if (interaction.commandName === "끌올") {
+        await handlePartyRepostCommand(interaction);
       }
       return;
     }

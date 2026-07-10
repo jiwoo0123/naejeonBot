@@ -5,6 +5,7 @@ exports.handlePartyCreateCommand = handlePartyCreateCommand;
 exports.handleAddParticipantCommand = handleAddParticipantCommand;
 exports.handleRemoveParticipantCommand = handleRemoveParticipantCommand;
 exports.handlePartyRemoveCommand = handlePartyRemoveCommand;
+exports.handlePartyRepostCommand = handlePartyRepostCommand;
 exports.handlePartyButton = handlePartyButton;
 const discord_js_1 = require("discord.js");
 const party_store_1 = require("../party-store");
@@ -38,6 +39,25 @@ async function closeParty(session, guild) {
     session.state = "closed";
     await updatePartyMessage(session, guild);
     (0, party_store_1.deleteParty)(session.id);
+}
+async function repostParty(session, guild, targetChannel) {
+    const oldChannel = guild.channels.cache.get(session.channelId);
+    const oldMessage = oldChannel && oldChannel.id !== targetChannel.id
+        ? await oldChannel.messages.fetch(session.messageId).catch(() => null)
+        : oldChannel?.id === targetChannel.id
+            ? await targetChannel.messages.fetch(session.messageId).catch(() => null)
+            : null;
+    const payload = await (0, party_ui_1.buildPartyMessagePayload)(session, guild);
+    const newMessage = await targetChannel.send(payload);
+    session.channelId = targetChannel.id;
+    session.messageId = newMessage.id;
+    (0, party_store_1.saveParty)(session);
+    if (oldMessage && oldMessage.id !== newMessage.id && oldMessage.embeds[0]) {
+        const embed = discord_js_1.EmbedBuilder.from(oldMessage.embeds[0]);
+        const prevDesc = oldMessage.embeds[0].description ?? "";
+        embed.setDescription(`${prevDesc}\n\n↘️ **아래로 끌올**되었습니다.`);
+        await oldMessage.edit({ embeds: [embed], components: [] });
+    }
 }
 function resolvePartyFromOption(interaction) {
     const partyId = interaction.options.getString("파티", true);
@@ -211,6 +231,35 @@ async function handlePartyRemoveCommand(interaction) {
     await closeParty(session, interaction.guild);
     await interaction.reply({
         content: `**${title}** 파티를 제거했습니다.`,
+        flags: discord_js_1.MessageFlags.Ephemeral,
+    });
+}
+async function handlePartyRepostCommand(interaction) {
+    if (!interaction.guild || !interaction.channel?.isTextBased()) {
+        await interaction.reply({
+            content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    const session = resolvePartyFromOption(interaction);
+    if (!session) {
+        await interaction.reply({
+            content: "선택한 파티를 찾을 수 없습니다. 이미 마감되었을 수 있습니다.",
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    if (!canManageParty(session, interaction.user.id, interaction)) {
+        await interaction.reply({
+            content: `끌올은 <@${session.hostId}> 주최자 또는 **서버 관리자**만 할 수 있습니다.`,
+            flags: discord_js_1.MessageFlags.Ephemeral,
+        });
+        return;
+    }
+    await repostParty(session, interaction.guild, interaction.channel);
+    await interaction.reply({
+        content: `**${session.title}** 파티를 채널 맨 아래로 끌올했습니다.`,
         flags: discord_js_1.MessageFlags.Ephemeral,
     });
 }
