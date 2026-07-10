@@ -1,6 +1,6 @@
 {
   "name": "soop",
-  "version": "2.1.0",
+  "version": "2.1.4",
   "description": "SOOP 디스코드 파티 모집 봇",
   "main": "dist/index.js",
   "scripts": {

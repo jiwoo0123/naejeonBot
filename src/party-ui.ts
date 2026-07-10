@@ -30,21 +30,21 @@ export function buildPartyCreateModal(): ModalBuilder {
       ),
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
-          .setCustomId("content")
-          .setLabel("설명")
-          .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(false)
-          .setMaxLength(500)
-      ),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder()
           .setCustomId("count")
           .setLabel("목표 인원")
           .setPlaceholder("1~99")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMaxLength(2)
+      ),
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("content")
+          .setLabel("설명")
+          .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(false)
+          .setMaxLength(500)
       )
     );
 }
@@ -100,6 +100,25 @@ function statusBadge(session: PartySession): string {
   }
   if (count >= targetCount) return "✅ 목표 달성 (추가 참가 가능)";
   return `🔥 모집 중 · ${targetCount - count}명 남음`;
+}
+
+function formatParticipantList(names: string[]): string {
+  const separator = " · ";
+  const lines: string[] = [];
+  let current = "";
+
+  for (const name of names) {
+    const next = current ? `${current}${separator}${name}` : name;
+    if (next.length > 1000) {
+      if (current) lines.push(current);
+      current = name;
+    } else {
+      current = next;
+    }
+  }
+
+  if (current) lines.push(current);
+  return lines.join("\n");
 }
 
 function formatBody(content: string): string {
@@ -164,21 +183,9 @@ export async function buildPartyEmbed(
   }
 
   const body = content.trim();
-  const descriptionParts: string[] = [];
-
   if (body) {
-    descriptionParts.push(formatBody(body));
+    embed.setDescription(formatBody(body));
   }
-
-  descriptionParts.push(`**${statusBadge(session)}**`);
-
-  if (state !== "closed") {
-    descriptionParts.push(
-      "아래 **참가** · **참가취소** · **마감** 버튼을 사용해주세요."
-    );
-  }
-
-  embed.setDescription(descriptionParts.join("\n\n"));
 
   embed.addFields(
     {
@@ -194,16 +201,9 @@ export async function buildPartyEmbed(
   );
 
   if (names.length > 0) {
-    const list = names
-      .map((name, i) => {
-        const medal =
-          i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "▫️";
-        return `${medal} ${name}`;
-      })
-      .join("\n");
     embed.addFields({
       name: `👥 참가자 · ${count}명`,
-      value: list,
+      value: formatParticipantList(names),
     });
   } else {
     embed.addFields({

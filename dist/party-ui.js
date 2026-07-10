@@ -23,18 +23,18 @@ function buildPartyCreateModal() {
         .setStyle(discord_js_1.TextInputStyle.Short)
         .setRequired(true)
         .setMaxLength(100)), new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
-        .setCustomId("content")
-        .setLabel("설명")
-        .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
-        .setStyle(discord_js_1.TextInputStyle.Paragraph)
-        .setRequired(false)
-        .setMaxLength(500)), new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
         .setCustomId("count")
         .setLabel("목표 인원")
         .setPlaceholder("1~99")
         .setStyle(discord_js_1.TextInputStyle.Short)
         .setRequired(true)
-        .setMaxLength(2)));
+        .setMaxLength(2)), new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
+        .setCustomId("content")
+        .setLabel("설명")
+        .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
+        .setStyle(discord_js_1.TextInputStyle.Paragraph)
+        .setRequired(false)
+        .setMaxLength(500)));
 }
 function partyButtonId(sessionId, action) {
     return `pt:${sessionId}:${action}`;
@@ -76,6 +76,25 @@ function statusBadge(session) {
     if (count >= targetCount)
         return "✅ 목표 달성 (추가 참가 가능)";
     return `🔥 모집 중 · ${targetCount - count}명 남음`;
+}
+function formatParticipantList(names) {
+    const separator = " · ";
+    const lines = [];
+    let current = "";
+    for (const name of names) {
+        const next = current ? `${current}${separator}${name}` : name;
+        if (next.length > 1000) {
+            if (current)
+                lines.push(current);
+            current = name;
+        }
+        else {
+            current = next;
+        }
+    }
+    if (current)
+        lines.push(current);
+    return lines.join("\n");
 }
 function formatBody(content) {
     return content
@@ -124,15 +143,9 @@ async function buildPartyEmbed(session, guild) {
         embed.setThumbnail(hostMember.user.displayAvatarURL({ size: 128 }));
     }
     const body = content.trim();
-    const descriptionParts = [];
     if (body) {
-        descriptionParts.push(formatBody(body));
+        embed.setDescription(formatBody(body));
     }
-    descriptionParts.push(`**${statusBadge(session)}**`);
-    if (state !== "closed") {
-        descriptionParts.push("아래 **참가** · **참가취소** · **마감** 버튼을 사용해주세요.");
-    }
-    embed.setDescription(descriptionParts.join("\n\n"));
     embed.addFields({
         name: "📊 모집 현황",
         value: `**${count}** / **${targetCount}명**\n\`${progressBar(count, targetCount)}\``,
@@ -143,15 +156,9 @@ async function buildPartyEmbed(session, guild) {
         inline: true,
     });
     if (names.length > 0) {
-        const list = names
-            .map((name, i) => {
-            const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : "▫️";
-            return `${medal} ${name}`;
-        })
-            .join("\n");
         embed.addFields({
             name: `👥 참가자 · ${count}명`,
-            value: list,
+            value: formatParticipantList(names),
         });
     }
     else {
