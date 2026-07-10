@@ -9,35 +9,51 @@ if (!token || !clientId) {
     console.error("DISCORD_TOKEN과 DISCORD_CLIENT_ID가 필요합니다.");
     process.exit(1);
 }
+const partyOption = (builder) => builder.addStringOption((option) => option
+    .setName("파티")
+    .setDescription("대상 파티 선택")
+    .setRequired(true)
+    .setAutocomplete(true));
 const commands = [
     new discord_js_1.SlashCommandBuilder()
-        .setName("내전")
-        .setDescription("롤 내전 모집 및 팀 구성을 시작합니다.")
+        .setName("파티생성")
+        .setDescription("목표 인원과 제목으로 파티 모집을 시작합니다.")
+        .addIntegerOption((option) => option
+        .setName("인원")
+        .setDescription("목표 인원 (1~99)")
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(99))
+        .addStringOption((option) => option
+        .setName("제목")
+        .setDescription("파티 제목 (임베드 상단에 표시)")
+        .setRequired(true)
+        .setMaxLength(100))
+        .addStringOption((option) => option
+        .setName("내용")
+        .setDescription("파티 상세 내용 (임베드 본문, 줄바꿈 가능)")
+        .setRequired(false)
+        .setMaxLength(500))
         .toJSON(),
-    new discord_js_1.SlashCommandBuilder()
-        .setName("호스트변경")
-        .setDescription("진행 중인 내전의 호스트를 변경합니다.")
-        .addUserOption((option) => option
-        .setName("호스트")
-        .setDescription("새 호스트로 지정할 사용자")
-        .setRequired(true))
-        .toJSON(),
-    new discord_js_1.SlashCommandBuilder()
+    partyOption(new discord_js_1.SlashCommandBuilder()
         .setName("참가자추가")
-        .setDescription("진행 중인 내전에 참가자를 직접 추가합니다.")
+        .setDescription("파티에 참가자를 직접 추가합니다."))
         .addUserOption((option) => option
         .setName("참가자")
         .setDescription("추가할 사용자 (@태그)")
         .setRequired(true))
         .toJSON(),
-    new discord_js_1.SlashCommandBuilder()
+    partyOption(new discord_js_1.SlashCommandBuilder()
         .setName("참가자제거")
-        .setDescription("진행 중인 내전에서 참가자를 제거합니다.")
+        .setDescription("파티에서 참가자를 제거합니다."))
         .addUserOption((option) => option
         .setName("참가자")
         .setDescription("제거할 사용자 (@태그)")
         .setRequired(true))
         .toJSON(),
+    partyOption(new discord_js_1.SlashCommandBuilder()
+        .setName("파티제거")
+        .setDescription("진행 중인 파티를 제거(마감)합니다.")).toJSON(),
 ];
 const rest = new discord_js_1.REST({ version: "10" }).setToken(token);
 async function main() {

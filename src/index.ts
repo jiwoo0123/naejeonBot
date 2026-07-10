@@ -9,13 +9,14 @@ import {
 } from "discord.js";
 import {
   handleAddParticipantCommand,
-  handleHostChangeCommand,
-  handleNaejeonButton,
-  handleNaejeonCommand,
+  handlePartyAutocomplete,
+  handlePartyButton,
+  handlePartyCreateCommand,
+  handlePartyRemoveCommand,
   handleRemoveParticipantCommand,
-} from "./handlers/naejeon";
-import { parseButtonId } from "./ui";
-import { loadSessions } from "./session-store";
+} from "./handlers/party";
+import { parsePartyButtonId } from "./party-ui";
+import { loadPartySessions } from "./party-store";
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -24,7 +25,7 @@ if (!token) {
   process.exit(1);
 }
 
-loadSessions();
+loadPartySessions();
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
@@ -37,23 +38,31 @@ client.once(Events.ClientReady, (c) => {
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   try {
+    if (interaction.isAutocomplete()) {
+      const partyCommands = ["참가자추가", "참가자제거", "파티제거"];
+      if (partyCommands.includes(interaction.commandName)) {
+        await handlePartyAutocomplete(interaction);
+      }
+      return;
+    }
+
     if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === "내전") {
-        await handleNaejeonCommand(interaction);
-      } else if (interaction.commandName === "호스트변경") {
-        await handleHostChangeCommand(interaction);
+      if (interaction.commandName === "파티생성") {
+        await handlePartyCreateCommand(interaction);
       } else if (interaction.commandName === "참가자추가") {
         await handleAddParticipantCommand(interaction);
       } else if (interaction.commandName === "참가자제거") {
         await handleRemoveParticipantCommand(interaction);
+      } else if (interaction.commandName === "파티제거") {
+        await handlePartyRemoveCommand(interaction);
       }
       return;
     }
 
     if (interaction.isButton()) {
-      const parsed = parseButtonId(interaction.customId);
+      const parsed = parsePartyButtonId(interaction.customId);
       if (parsed) {
-        await handleNaejeonButton(interaction);
+        await handlePartyButton(interaction);
       }
     }
   } catch (error) {

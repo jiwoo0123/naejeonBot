@@ -2,15 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const discord_js_1 = require("discord.js");
-const naejeon_1 = require("./handlers/naejeon");
-const ui_1 = require("./ui");
-const session_store_1 = require("./session-store");
+const party_1 = require("./handlers/party");
+const party_ui_1 = require("./party-ui");
+const party_store_1 = require("./party-store");
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
     console.error("DISCORD_TOKEN 환경 변수가 필요합니다.");
     process.exit(1);
 }
-(0, session_store_1.loadSessions)();
+(0, party_store_1.loadPartySessions)();
 const client = new discord_js_1.Client({
     intents: [discord_js_1.GatewayIntentBits.Guilds, discord_js_1.GatewayIntentBits.GuildMembers],
 });
@@ -20,25 +20,32 @@ client.once(discord_js_1.Events.ClientReady, (c) => {
 });
 client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
     try {
-        if (interaction.isChatInputCommand()) {
-            if (interaction.commandName === "내전") {
-                await (0, naejeon_1.handleNaejeonCommand)(interaction);
+        if (interaction.isAutocomplete()) {
+            const partyCommands = ["참가자추가", "참가자제거", "파티제거"];
+            if (partyCommands.includes(interaction.commandName)) {
+                await (0, party_1.handlePartyAutocomplete)(interaction);
             }
-            else if (interaction.commandName === "호스트변경") {
-                await (0, naejeon_1.handleHostChangeCommand)(interaction);
+            return;
+        }
+        if (interaction.isChatInputCommand()) {
+            if (interaction.commandName === "파티생성") {
+                await (0, party_1.handlePartyCreateCommand)(interaction);
             }
             else if (interaction.commandName === "참가자추가") {
-                await (0, naejeon_1.handleAddParticipantCommand)(interaction);
+                await (0, party_1.handleAddParticipantCommand)(interaction);
             }
             else if (interaction.commandName === "참가자제거") {
-                await (0, naejeon_1.handleRemoveParticipantCommand)(interaction);
+                await (0, party_1.handleRemoveParticipantCommand)(interaction);
+            }
+            else if (interaction.commandName === "파티제거") {
+                await (0, party_1.handlePartyRemoveCommand)(interaction);
             }
             return;
         }
         if (interaction.isButton()) {
-            const parsed = (0, ui_1.parseButtonId)(interaction.customId);
+            const parsed = (0, party_ui_1.parsePartyButtonId)(interaction.customId);
             if (parsed) {
-                await (0, naejeon_1.handleNaejeonButton)(interaction);
+                await (0, party_1.handlePartyButton)(interaction);
             }
         }
     }
