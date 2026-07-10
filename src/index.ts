@@ -13,11 +13,13 @@ import {
   handlePartyButton,
   handlePartyCreateCommand,
   handlePartyCreateModal,
+  handlePartyEditCommand,
+  handlePartyEditModal,
   handlePartyRemoveCommand,
   handlePartyRepostCommand,
   handleRemoveParticipantCommand,
 } from "./handlers/party";
-import { parsePartyButtonId, PARTY_CREATE_MODAL_ID } from "./party-ui";
+import { parsePartyButtonId, parsePartyEditModalId, PARTY_CREATE_MODAL_ID } from "./party-ui";
 import { loadPartySessions } from "./party-store";
 import { BOT_NAME } from "./constants";
 
@@ -42,7 +44,13 @@ client.once(Events.ClientReady, (c) => {
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   try {
     if (interaction.isAutocomplete()) {
-      const partyCommands = ["참가자추가", "참가자제거", "파티제거", "끌올"];
+      const partyCommands = [
+        "참가자추가",
+        "참가자제거",
+        "파티수정",
+        "파티제거",
+        "끌올",
+      ];
       if (partyCommands.includes(interaction.commandName)) {
         await handlePartyAutocomplete(interaction);
       }
@@ -52,6 +60,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (interaction.isModalSubmit()) {
       if (interaction.customId === PARTY_CREATE_MODAL_ID) {
         await handlePartyCreateModal(interaction);
+      } else if (parsePartyEditModalId(interaction.customId)) {
+        await handlePartyEditModal(interaction);
       }
       return;
     }
@@ -59,6 +69,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) {
       if (interaction.commandName === "파티생성") {
         await handlePartyCreateCommand(interaction);
+      } else if (interaction.commandName === "파티수정") {
+        await handlePartyEditCommand(interaction);
       } else if (interaction.commandName === "참가자추가") {
         await handleAddParticipantCommand(interaction);
       } else if (interaction.commandName === "참가자제거") {

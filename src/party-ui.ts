@@ -13,40 +13,70 @@ import { getActivePartiesByGuild } from "./party-store";
 import { PartySession } from "./party-types";
 
 export const PARTY_CREATE_MODAL_ID = "pt:create";
+export const PARTY_EDIT_MODAL_PREFIX = "pt:edit:";
+
+function buildPartyFormRows(
+  title: string,
+  count: string,
+  content: string
+): ActionRowBuilder<TextInputBuilder>[] {
+  return [
+    new ActionRowBuilder<TextInputBuilder>().addComponents(
+      new TextInputBuilder()
+        .setCustomId("title")
+        .setLabel("제목")
+        .setPlaceholder("예: 발로란트 5인큐")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(100)
+        .setValue(title)
+    ),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(
+      new TextInputBuilder()
+        .setCustomId("count")
+        .setLabel("목표 인원")
+        .setPlaceholder("1~99")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(2)
+        .setValue(count)
+    ),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(
+      new TextInputBuilder()
+        .setCustomId("content")
+        .setLabel("설명")
+        .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(false)
+        .setMaxLength(500)
+        .setValue(content)
+    ),
+  ];
+}
 
 export function buildPartyCreateModal(): ModalBuilder {
   return new ModalBuilder()
     .setCustomId(PARTY_CREATE_MODAL_ID)
     .setTitle("파티 만들기")
+    .addComponents(...buildPartyFormRows("", "", ""));
+}
+
+export function buildPartyEditModal(session: PartySession): ModalBuilder {
+  return new ModalBuilder()
+    .setCustomId(`${PARTY_EDIT_MODAL_PREFIX}${session.id}`)
+    .setTitle("파티 수정")
     .addComponents(
-      new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder()
-          .setCustomId("title")
-          .setLabel("제목")
-          .setPlaceholder("예: 발로란트 5인큐")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMaxLength(100)
-      ),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder()
-          .setCustomId("count")
-          .setLabel("목표 인원")
-          .setPlaceholder("1~99")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMaxLength(2)
-      ),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder()
-          .setCustomId("content")
-          .setLabel("설명")
-          .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(false)
-          .setMaxLength(500)
+      ...buildPartyFormRows(
+        session.title,
+        String(session.targetCount),
+        session.content
       )
     );
+}
+
+export function parsePartyEditModalId(customId: string): string | null {
+  if (!customId.startsWith(PARTY_EDIT_MODAL_PREFIX)) return null;
+  return customId.slice(PARTY_EDIT_MODAL_PREFIX.length) || null;
 }
 
 export function partyButtonId(sessionId: string, action: string): string {

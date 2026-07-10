@@ -27,6 +27,11 @@ const commands = [
     .toJSON(),
   partyOption(
     new SlashCommandBuilder()
+      .setName("파티수정")
+      .setDescription("진행 중인 파티 정보를 수정합니다.")
+  ).toJSON(),
+  partyOption(
+    new SlashCommandBuilder()
       .setName("참가자추가")
       .setDescription("파티에 참가자를 직접 추가합니다.")
   )

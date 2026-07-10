@@ -19,8 +19,10 @@ import {
 } from "../party-store";
 import {
   buildPartyCreateModal,
+  buildPartyEditModal,
   buildPartyMessagePayload,
   getPartyAutocompleteChoices,
+  parsePartyEditModalId,
   PARTY_CREATE_MODAL_ID,
 } from "../party-ui";
 import { createPartySession, type PartySession } from "../party-types";
@@ -110,6 +112,27 @@ function resolvePartyFromOption(
   return session;
 }
 
+function parsePartyModalFields(interaction: ModalSubmitInteraction):
+  | { ok: true; title: string; content: string; targetCount: number }
+  | { ok: false; message: string } {
+  const title = interaction.fields.getTextInputValue("title").trim();
+  const content = interaction.fields.getTextInputValue("content").trim();
+  const countRaw = interaction.fields.getTextInputValue("count").trim();
+  const targetCount = Number.parseInt(countRaw, 10);
+
+  if (!Number.isInteger(targetCount) || targetCount < 1 || targetCount > 99) {
+    return { ok: false, message: "목표 인원은 **1~99** 사이의 숫자로 입력해주세요." };
+  }
+  if (title.length < 1 || title.length > 100) {
+    return { ok: false, message: "제목은 **1~100자** 이내로 입력해주세요." };
+  }
+  if (content.length > 500) {
+    return { ok: false, message: "설명은 **500자** 이내로 입력해주세요." };
+  }
+
+  return { ok: true, title, content, targetCount };
+}
+
 export async function handlePartyAutocomplete(
   interaction: AutocompleteInteraction
 ): Promise<void> {
@@ -148,34 +171,16 @@ export async function handlePartyCreateModal(
     return;
   }
 
-  const title = interaction.fields.getTextInputValue("title").trim();
-  const content = interaction.fields.getTextInputValue("content").trim();
-  const countRaw = interaction.fields.getTextInputValue("count").trim();
-  const targetCount = Number.parseInt(countRaw, 10);
-
-  if (!Number.isInteger(targetCount) || targetCount < 1 || targetCount > 99) {
+  const parsed = parsePartyModalFields(interaction);
+  if (!parsed.ok) {
     await interaction.reply({
-      content: "목표 인원은 **1~99** 사이의 숫자로 입력해주세요.",
+      content: parsed.message,
       flags: MessageFlags.Ephemeral,
     });
     return;
   }
 
-  if (title.length < 1 || title.length > 100) {
-    await interaction.reply({
-      content: "제목은 **1~100자** 이내로 입력해주세요.",
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  if (content.length > 500) {
-    await interaction.reply({
-      content: "설명은 **500자** 이내로 입력해주세요.",
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  const { title, content, targetCount } = parsed;
 
   if (!interaction.channelId) {
     await interaction.reply({
@@ -205,6 +210,89 @@ export async function handlePartyCreateModal(
 
   session.messageId = message.id;
   saveParty(session);
+}
+
+export async function handlePartyEditCommand(
+  interaction: ChatInputCommandInteraction
+): Promise<void> {
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: "서버에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const session = resolvePartyFromOption(interaction);
+  if (!session) {
+    await interaction.reply({
+      content: "선택한 파티를 찾을 수 없습니다. 이미 마감되었을 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!canManageParty(session, interaction.user.id, interaction)) {
+    await interaction.reply({
+      content: `파티 수정은 <@${session.hostId}> 주최자 또는 **서버 관리자**만 할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.showModal(buildPartyEditModal(session));
+}
+
+export async function handlePartyEditModal(
+  interaction: ModalSubmitInteraction
+): Promise<void> {
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: "서버에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const sessionId = parsePartyEditModalId(interaction.customId);
+  const session = sessionId ? getParty(sessionId) : undefined;
+  if (!session || session.state !== "open" || session.guildId !== interaction.guild.id) {
+    await interaction.reply({
+      content: "수정할 파티를 찾을 수 없습니다. 이미 마감되었을 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!canManageParty(session, interaction.user.id, interaction)) {
+    await interaction.reply({
+      content: `파티 수정은 <@${session.hostId}> 주최자 또는 **서버 관리자**만 할 수 있습니다.`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const parsed = parsePartyModalFields(interaction);
+  if (!parsed.ok) {
+    await interaction.reply({
+      content: parsed.message,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const { title, content, targetCount } = parsed;
+
+  session.title = title;
+  session.content = content;
+  session.targetCount = targetCount;
+  saveParty(session);
+  await updatePartyMessage(session, interaction.guild);
+
+  await interaction.reply({
+    content: `**${title}** 파티를 수정했습니다.`,
+    flags: MessageFlags.Ephemeral,
+  });
 }
 
 export async function handleAddParticipantCommand(

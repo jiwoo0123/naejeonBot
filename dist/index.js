@@ -22,7 +22,13 @@ client.once(discord_js_1.Events.ClientReady, (c) => {
 client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
     try {
         if (interaction.isAutocomplete()) {
-            const partyCommands = ["참가자추가", "참가자제거", "파티제거", "끌올"];
+            const partyCommands = [
+                "참가자추가",
+                "참가자제거",
+                "파티수정",
+                "파티제거",
+                "끌올",
+            ];
             if (partyCommands.includes(interaction.commandName)) {
                 await (0, party_1.handlePartyAutocomplete)(interaction);
             }
@@ -32,11 +38,17 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
             if (interaction.customId === party_ui_1.PARTY_CREATE_MODAL_ID) {
                 await (0, party_1.handlePartyCreateModal)(interaction);
             }
+            else if ((0, party_ui_1.parsePartyEditModalId)(interaction.customId)) {
+                await (0, party_1.handlePartyEditModal)(interaction);
+            }
             return;
         }
         if (interaction.isChatInputCommand()) {
             if (interaction.commandName === "파티생성") {
                 await (0, party_1.handlePartyCreateCommand)(interaction);
+            }
+            else if (interaction.commandName === "파티수정") {
+                await (0, party_1.handlePartyEditCommand)(interaction);
             }
             else if (interaction.commandName === "참가자추가") {
                 await (0, party_1.handleAddParticipantCommand)(interaction);

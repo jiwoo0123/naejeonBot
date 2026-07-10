@@ -21,6 +21,9 @@ const commands = [
         .setDescription("파티 모집 임베드를 작성합니다.")
         .toJSON(),
     partyOption(new discord_js_1.SlashCommandBuilder()
+        .setName("파티수정")
+        .setDescription("진행 중인 파티 정보를 수정합니다.")).toJSON(),
+    partyOption(new discord_js_1.SlashCommandBuilder()
         .setName("참가자추가")
         .setDescription("파티에 참가자를 직접 추가합니다."))
         .addUserOption((option) => option
