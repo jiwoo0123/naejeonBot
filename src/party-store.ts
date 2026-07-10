@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { PartySession } from "./party-types";
+import { BOT_NAME } from "./constants";
 
 const sessions = new Map<string, PartySession>();
 
@@ -31,9 +32,9 @@ export function loadPartySessions(): void {
     for (const [id, session] of Object.entries(data.sessions ?? {})) {
       sessions.set(id, session);
     }
-    console.log(`파티 세션 ${sessions.size}개 복구됨`);
+    console.log(`[${BOT_NAME}] 파티 세션 ${sessions.size}개 복구됨`);
   } catch (error) {
-    console.error("파티 세션 파일 로드 실패:", error);
+    console.error(`[${BOT_NAME}] 파티 세션 파일 로드 실패:`, error);
   }
 }
 

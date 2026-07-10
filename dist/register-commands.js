@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const discord_js_1 = require("discord.js");
+const constants_1 = require("./constants");
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID;
 const guildId = process.env.DISCORD_GUILD_ID;
 if (!token || !clientId) {
-    console.error("DISCORD_TOKEN과 DISCORD_CLIENT_ID가 필요합니다.");
+    console.error(`[${constants_1.BOT_NAME}] DISCORD_TOKEN과 DISCORD_CLIENT_ID가 필요합니다.`);
     process.exit(1);
 }
 const partyOption = (builder) => builder.addStringOption((option) => option
@@ -17,7 +18,7 @@ const partyOption = (builder) => builder.addStringOption((option) => option
 const commands = [
     new discord_js_1.SlashCommandBuilder()
         .setName("파티생성")
-        .setDescription("목표 인원과 제목으로 파티 모집을 시작합니다.")
+        .setDescription("목표 인원, 제목, 설명으로 파티 모집을 시작합니다.")
         .addIntegerOption((option) => option
         .setName("인원")
         .setDescription("목표 인원 (1~99)")
@@ -30,8 +31,8 @@ const commands = [
         .setRequired(true)
         .setMaxLength(100))
         .addStringOption((option) => option
-        .setName("내용")
-        .setDescription("파티 상세 내용 (임베드 본문, 줄바꿈 가능)")
+        .setName("설명")
+        .setDescription("파티 설명 (임베드 본문에 표시, 줄바꿈 가능)")
         .setRequired(false)
         .setMaxLength(500))
         .toJSON(),
@@ -62,11 +63,11 @@ async function main() {
         await rest.put(discord_js_1.Routes.applicationGuildCommands(appId, guildId), {
             body: commands,
         });
-        console.log(`길드(${guildId})에 슬래시 명령어를 등록했습니다.`);
+        console.log(`[${constants_1.BOT_NAME}] 길드(${guildId})에 슬래시 명령어를 등록했습니다.`);
     }
     else {
         await rest.put(discord_js_1.Routes.applicationCommands(appId), { body: commands });
-        console.log("전역 슬래시 명령어를 등록했습니다. (반영까지 최대 1시간)");
+        console.log(`[${constants_1.BOT_NAME}] 전역 슬래시 명령어를 등록했습니다. (반영까지 최대 1시간)`);
     }
 }
 main().catch(console.error);

@@ -11,6 +11,7 @@ exports.getActivePartiesByGuild = getActivePartiesByGuild;
 exports.createPartySessionId = createPartySessionId;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const constants_1 = require("./constants");
 const sessions = new Map();
 const DATA_DIR = path_1.default.join(process.cwd(), "data");
 const SESSION_FILE = path_1.default.join(DATA_DIR, "party-sessions.json");
@@ -30,10 +31,10 @@ function loadPartySessions() {
         for (const [id, session] of Object.entries(data.sessions ?? {})) {
             sessions.set(id, session);
         }
-        console.log(`파티 세션 ${sessions.size}개 복구됨`);
+        console.log(`[${constants_1.BOT_NAME}] 파티 세션 ${sessions.size}개 복구됨`);
     }
     catch (error) {
-        console.error("파티 세션 파일 로드 실패:", error);
+        console.error(`[${constants_1.BOT_NAME}] 파티 세션 파일 로드 실패:`, error);
     }
 }
 function getParty(sessionId) {

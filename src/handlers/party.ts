@@ -102,7 +102,7 @@ export async function handlePartyCreateCommand(
 
   const targetCount = interaction.options.getInteger("인원", true);
   const title = interaction.options.getString("제목", true).trim();
-  const content = interaction.options.getString("내용")?.trim() ?? "";
+  const content = interaction.options.getString("설명")?.trim() ?? "";
 
   if (targetCount < 1 || targetCount > 99) {
     await interaction.reply({
@@ -122,7 +122,7 @@ export async function handlePartyCreateCommand(
 
   if (content.length > 500) {
     await interaction.reply({
-      content: "내용은 **500자** 이내로 입력해주세요.",
+      content: "설명은 **500자** 이내로 입력해주세요.",
       flags: MessageFlags.Ephemeral,
     });
     return;

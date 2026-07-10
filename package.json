@@ -1,7 +1,7 @@
 {
-  "name": "party-bot",
-  "version": "2.0.0",
-  "description": "디스코드 파티 모집 봇",
+  "name": "soop",
+  "version": "2.0.3",
+  "description": "SOOP 디스코드 파티 모집 봇",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "dev": "tsx src/index.ts",
     "register": "tsx src/register-commands.ts"
   },
-  "keywords": ["discord", "party"],
+  "keywords": ["discord", "soop", "party"],
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.16.3",

@@ -17,11 +17,12 @@ import {
 } from "./handlers/party";
 import { parsePartyButtonId } from "./party-ui";
 import { loadPartySessions } from "./party-store";
+import { BOT_NAME } from "./constants";
 
 const token = process.env.DISCORD_TOKEN;
 
 if (!token) {
-  console.error("DISCORD_TOKEN 환경 변수가 필요합니다.");
+  console.error(`[${BOT_NAME}] DISCORD_TOKEN 환경 변수가 필요합니다.`);
   process.exit(1);
 }
 
@@ -32,8 +33,8 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`봇 준비 완료: ${c.user.tag}`);
-  console.log(`코드 버전: ${process.env.npm_package_version ?? "unknown"}`);
+  console.log(`[${BOT_NAME}] 준비 완료: ${c.user.tag}`);
+  console.log(`[${BOT_NAME}] 버전: ${process.env.npm_package_version ?? "unknown"}`);
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
@@ -66,7 +67,7 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       }
     }
   } catch (error) {
-    console.error("Interaction error:", error);
+    console.error(`[${BOT_NAME}] Interaction error:`, error);
     const msg: InteractionReplyOptions = {
       content: "오류가 발생했습니다. 다시 시도해주세요.",
       flags: MessageFlags.Ephemeral,

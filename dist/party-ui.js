@@ -96,19 +96,19 @@ async function buildPartyEmbed(session, guild) {
         });
         embed.setThumbnail(hostMember.user.displayAvatarURL({ size: 128 }));
     }
-    const body = content || title;
-    embed.setDescription(`${formatBody(body)}\n\n` +
-        (state === "closed"
-            ? `**${statusBadge(session)}**`
-            : `**${statusBadge(session)}**\n` +
-                `아래 **참가** · **참가취소** · **마감** 버튼을 사용해주세요.`));
+    const body = content.trim();
+    const descriptionParts = [];
+    if (body) {
+        descriptionParts.push(formatBody(body));
+    }
+    descriptionParts.push(`**${statusBadge(session)}**`);
+    if (state !== "closed") {
+        descriptionParts.push("아래 **참가** · **참가취소** · **마감** 버튼을 사용해주세요.");
+    }
+    embed.setDescription(descriptionParts.join("\n\n"));
     embed.addFields({
-        name: "🎯 목표 인원",
-        value: `**${targetCount}명**`,
-        inline: true,
-    }, {
         name: "📊 모집 현황",
-        value: `**${count}** / ${targetCount}명\n\`${progressBar(count, targetCount)}\``,
+        value: `**${count}** / **${targetCount}명**\n\`${progressBar(count, targetCount)}\``,
         inline: true,
     }, {
         name: "📌 상태",

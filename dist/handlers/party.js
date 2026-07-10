@@ -67,7 +67,7 @@ async function handlePartyCreateCommand(interaction) {
     }
     const targetCount = interaction.options.getInteger("인원", true);
     const title = interaction.options.getString("제목", true).trim();
-    const content = interaction.options.getString("내용")?.trim() ?? "";
+    const content = interaction.options.getString("설명")?.trim() ?? "";
     if (targetCount < 1 || targetCount > 99) {
         await interaction.reply({
             content: "목표 인원은 **1~99명** 사이로 설정해주세요.",
@@ -84,7 +84,7 @@ async function handlePartyCreateCommand(interaction) {
     }
     if (content.length > 500) {
         await interaction.reply({
-            content: "내용은 **500자** 이내로 입력해주세요.",
+            content: "설명은 **500자** 이내로 입력해주세요.",
             flags: discord_js_1.MessageFlags.Ephemeral,
         });
         return;

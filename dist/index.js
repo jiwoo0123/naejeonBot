@@ -5,9 +5,10 @@ const discord_js_1 = require("discord.js");
 const party_1 = require("./handlers/party");
 const party_ui_1 = require("./party-ui");
 const party_store_1 = require("./party-store");
+const constants_1 = require("./constants");
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
-    console.error("DISCORD_TOKEN 환경 변수가 필요합니다.");
+    console.error(`[${constants_1.BOT_NAME}] DISCORD_TOKEN 환경 변수가 필요합니다.`);
     process.exit(1);
 }
 (0, party_store_1.loadPartySessions)();
@@ -15,8 +16,8 @@ const client = new discord_js_1.Client({
     intents: [discord_js_1.GatewayIntentBits.Guilds, discord_js_1.GatewayIntentBits.GuildMembers],
 });
 client.once(discord_js_1.Events.ClientReady, (c) => {
-    console.log(`봇 준비 완료: ${c.user.tag}`);
-    console.log(`코드 버전: ${process.env.npm_package_version ?? "unknown"}`);
+    console.log(`[${constants_1.BOT_NAME}] 준비 완료: ${c.user.tag}`);
+    console.log(`[${constants_1.BOT_NAME}] 버전: ${process.env.npm_package_version ?? "unknown"}`);
 });
 client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
     try {
@@ -50,7 +51,7 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
         }
     }
     catch (error) {
-        console.error("Interaction error:", error);
+        console.error(`[${constants_1.BOT_NAME}] Interaction error:`, error);
         const msg = {
             content: "오류가 발생했습니다. 다시 시도해주세요.",
             flags: discord_js_1.MessageFlags.Ephemeral,
