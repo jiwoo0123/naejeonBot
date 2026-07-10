@@ -12,11 +12,12 @@ import {
   handlePartyAutocomplete,
   handlePartyButton,
   handlePartyCreateCommand,
+  handlePartyCreateModal,
   handlePartyRemoveCommand,
   handlePartyRepostCommand,
   handleRemoveParticipantCommand,
 } from "./handlers/party";
-import { parsePartyButtonId } from "./party-ui";
+import { parsePartyButtonId, PARTY_CREATE_MODAL_ID } from "./party-ui";
 import { loadPartySessions } from "./party-store";
 import { BOT_NAME } from "./constants";
 
@@ -44,6 +45,13 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       const partyCommands = ["참가자추가", "참가자제거", "파티제거", "끌올"];
       if (partyCommands.includes(interaction.commandName)) {
         await handlePartyAutocomplete(interaction);
+      }
+      return;
+    }
+
+    if (interaction.isModalSubmit()) {
+      if (interaction.customId === PARTY_CREATE_MODAL_ID) {
+        await handlePartyCreateModal(interaction);
       }
       return;
     }

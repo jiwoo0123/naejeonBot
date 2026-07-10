@@ -4,10 +4,50 @@ import {
   ButtonStyle,
   EmbedBuilder,
   Guild,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   type ApplicationCommandOptionChoiceData,
 } from "discord.js";
 import { getActivePartiesByGuild } from "./party-store";
 import { PartySession } from "./party-types";
+
+export const PARTY_CREATE_MODAL_ID = "pt:create";
+
+export function buildPartyCreateModal(): ModalBuilder {
+  return new ModalBuilder()
+    .setCustomId(PARTY_CREATE_MODAL_ID)
+    .setTitle("파티 만들기")
+    .addComponents(
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("title")
+          .setLabel("제목")
+          .setPlaceholder("예: 발로란트 5인큐")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(100)
+      ),
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("content")
+          .setLabel("설명")
+          .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(false)
+          .setMaxLength(500)
+      ),
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId("count")
+          .setLabel("목표 인원")
+          .setPlaceholder("1~99")
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(2)
+      )
+    );
+}
 
 export function partyButtonId(sessionId: string, action: string): string {
   return `pt:${sessionId}:${action}`;

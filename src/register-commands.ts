@@ -23,29 +23,7 @@ const partyOption = (builder: SlashCommandBuilder) =>
 const commands = [
   new SlashCommandBuilder()
     .setName("파티생성")
-    .setDescription("목표 인원, 제목, 설명으로 파티 모집을 시작합니다.")
-    .addIntegerOption((option) =>
-      option
-        .setName("인원")
-        .setDescription("목표 인원 (1~99)")
-        .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(99)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("제목")
-        .setDescription("파티 제목 (임베드 상단에 표시)")
-        .setRequired(true)
-        .setMaxLength(100)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("설명")
-        .setDescription("파티 설명 (임베드 본문에 표시, 줄바꿈 가능)")
-        .setRequired(false)
-        .setMaxLength(500)
-    )
+    .setDescription("파티 모집 임베드를 작성합니다.")
     .toJSON(),
   partyOption(
     new SlashCommandBuilder()

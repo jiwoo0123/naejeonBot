@@ -5,6 +5,7 @@ import {
   EmbedBuilder,
   Guild,
   MessageFlags,
+  ModalSubmitInteraction,
   PermissionFlagsBits,
   TextChannel,
   type Interaction,
@@ -17,8 +18,10 @@ import {
   saveParty,
 } from "../party-store";
 import {
+  buildPartyCreateModal,
   buildPartyMessagePayload,
   getPartyAutocompleteChoices,
+  PARTY_CREATE_MODAL_ID,
 } from "../party-ui";
 import { createPartySession, type PartySession } from "../party-types";
 
@@ -131,13 +134,28 @@ export async function handlePartyCreateCommand(
     return;
   }
 
-  const targetCount = interaction.options.getInteger("인원", true);
-  const title = interaction.options.getString("제목", true).trim();
-  const content = interaction.options.getString("설명")?.trim() ?? "";
+  await interaction.showModal(buildPartyCreateModal());
+}
 
-  if (targetCount < 1 || targetCount > 99) {
+export async function handlePartyCreateModal(
+  interaction: ModalSubmitInteraction
+): Promise<void> {
+  if (!interaction.guild || !interaction.channel?.isTextBased()) {
     await interaction.reply({
-      content: "목표 인원은 **1~99명** 사이로 설정해주세요.",
+      content: "서버 텍스트 채널에서만 사용할 수 있습니다.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const title = interaction.fields.getTextInputValue("title").trim();
+  const content = interaction.fields.getTextInputValue("content").trim();
+  const countRaw = interaction.fields.getTextInputValue("count").trim();
+  const targetCount = Number.parseInt(countRaw, 10);
+
+  if (!Number.isInteger(targetCount) || targetCount < 1 || targetCount > 99) {
+    await interaction.reply({
+      content: "목표 인원은 **1~99** 사이의 숫자로 입력해주세요.",
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -154,6 +172,14 @@ export async function handlePartyCreateCommand(
   if (content.length > 500) {
     await interaction.reply({
       content: "설명은 **500자** 이내로 입력해주세요.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!interaction.channelId) {
+    await interaction.reply({
+      content: "채널 정보를 확인할 수 없습니다.",
       flags: MessageFlags.Ephemeral,
     });
     return;

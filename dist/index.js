@@ -28,6 +28,12 @@ client.on(discord_js_1.Events.InteractionCreate, async (interaction) => {
             }
             return;
         }
+        if (interaction.isModalSubmit()) {
+            if (interaction.customId === party_ui_1.PARTY_CREATE_MODAL_ID) {
+                await (0, party_1.handlePartyCreateModal)(interaction);
+            }
+            return;
+        }
         if (interaction.isChatInputCommand()) {
             if (interaction.commandName === "파티생성") {
                 await (0, party_1.handlePartyCreateCommand)(interaction);

@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PARTY_CREATE_MODAL_ID = void 0;
+exports.buildPartyCreateModal = buildPartyCreateModal;
 exports.partyButtonId = partyButtonId;
 exports.parsePartyButtonId = parsePartyButtonId;
 exports.formatPartyLabel = formatPartyLabel;
@@ -9,6 +11,31 @@ exports.buildPartyComponents = buildPartyComponents;
 exports.buildPartyMessagePayload = buildPartyMessagePayload;
 const discord_js_1 = require("discord.js");
 const party_store_1 = require("./party-store");
+exports.PARTY_CREATE_MODAL_ID = "pt:create";
+function buildPartyCreateModal() {
+    return new discord_js_1.ModalBuilder()
+        .setCustomId(exports.PARTY_CREATE_MODAL_ID)
+        .setTitle("파티 만들기")
+        .addComponents(new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
+        .setCustomId("title")
+        .setLabel("제목")
+        .setPlaceholder("예: 발로란트 5인큐")
+        .setStyle(discord_js_1.TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(100)), new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
+        .setCustomId("content")
+        .setLabel("설명")
+        .setPlaceholder("모집 상세 내용을 입력하세요 (줄바꿈 가능)")
+        .setStyle(discord_js_1.TextInputStyle.Paragraph)
+        .setRequired(false)
+        .setMaxLength(500)), new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.TextInputBuilder()
+        .setCustomId("count")
+        .setLabel("목표 인원")
+        .setPlaceholder("1~99")
+        .setStyle(discord_js_1.TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(2)));
+}
 function partyButtonId(sessionId, action) {
     return `pt:${sessionId}:${action}`;
 }
