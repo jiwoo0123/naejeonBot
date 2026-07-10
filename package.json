@@ -9,7 +9,7 @@
     "dev": "tsx src/index.ts",
     "register": "tsx src/register-commands.ts"
   },
-  "keywords": ["discord", "party", "recruit"],
+  "keywords": ["discord", "party"],
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.16.3",
